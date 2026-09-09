@@ -1,0 +1,32 @@
+{
+  "name": "전국금속노동조합 현대중공업지부 간행물",
+  "short_name": "현중지부 간행물",
+  "description": "전국금속노동조합 현대중공업지부의 소식지 및 공식 간행물 아카이브",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#16222C",
+  "theme_color": "#16222C",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

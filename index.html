@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전국금속노동조합 현대중공업지부 · 간행물 아카이브</title>
+<meta name="description" content="전국금속노동조합 현대중공업지부 공식 소식지 및 간행물 아카이브">
+<meta name="theme-color" content="#16222C">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-eyebrow">전국금속노동조합</span>
+      <h1 class="brand-name">현대중공업지부</h1>
+    </div>
+    <p class="brand-sub">간행물 아카이브 — 조합원이라면 누구나 열람할 수 있습니다</p>
+    <div class="dimension-line" aria-hidden="true">
+      <span class="tick" style="left:0%"></span>
+      <span class="tick" style="left:20%"></span>
+      <span class="tick" style="left:40%"></span>
+      <span class="tick" style="left:60%"></span>
+      <span class="tick" style="left:80%"></span>
+      <span class="tick" style="left:100%"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="toolbar">
+    <div class="toolbar-inner">
+      <label class="search-field">
+        <span class="visually-hidden">간행물 검색</span>
+        <input type="search" id="searchInput" placeholder="제목으로 검색 (예: 임단협, 대의원대회)">
+      </label>
+      <div class="cat-filters" id="catFilters" role="group" aria-label="카테고리 필터">
+        <!-- 카테고리 버튼은 JS에서 자동 생성됩니다 -->
+      </div>
+    </div>
+  </section>
+
+  <section class="archive" aria-labelledby="archiveHeading">
+    <div class="archive-inner">
+      <h2 id="archiveHeading" class="visually-hidden">간행물 목록</h2>
+      <div id="pubList" class="pub-list">
+        <!-- 목록은 js/app.js가 data/publications.json을 읽어 채웁니다 -->
+      </div>
+      <p id="emptyState" class="empty-state" hidden>검색 조건에 맞는 간행물이 없습니다.</p>
+    </div>
+  </section>
+
+  <section class="install-banner" id="installBanner" hidden>
+    <div class="install-inner">
+      <p><strong>홈 화면에 추가</strong>하면 앱처럼 아이콘을 눌러 바로 열 수 있습니다.</p>
+      <button id="installBtn" type="button">홈 화면에 추가</button>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="corner-mark" aria-hidden="true">⌐</p>
+    <p>전국금속노동조합 현대중공업지부</p>
+    <p class="footer-note">이 아카이브는 조합원 대상 정식 간행물 공유를 위해 운영됩니다.</p>
+  </div>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
