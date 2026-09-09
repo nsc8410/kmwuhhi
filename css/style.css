@@ -313,6 +313,10 @@ body {
   color: var(--paper);
 }
 
+.viewer[hidden] {
+  display: none;
+}
+
 .viewer-top {
   display: flex;
   justify-content: space-between;
