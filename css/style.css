@@ -47,9 +47,9 @@ body {
 .brand-eyebrow {
   display: block;
   font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--steel);
-  letter-spacing: 0.02em;
+  font-weight: 900;
+  color: var(--paper);
+  letter-spacing: -0.01em;
   margin-bottom: 6px;
 }
 
