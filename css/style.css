@@ -279,6 +279,19 @@ body {
   color: var(--steel);
 }
 
+.footer-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--safety);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+}
+
 .footer-contact p {
   margin: 0 0 8px;
   padding-left: 14px;
