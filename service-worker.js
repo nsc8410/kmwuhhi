@@ -1,5 +1,5 @@
 // 캐시 이름의 버전을 올리면(v1 -> v2) 사용자 브라우저의 캐시가 자동으로 갱신됩니다.
-var CACHE_NAME = "hhi-union-archive-v3";
+var CACHE_NAME = "hhi-union-archive-v5";
 
 var CORE_ASSETS = [
   "./",
