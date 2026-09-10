@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>간행물 올리기 · 관리자 도구</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #16222C;
+    --navy-2: #1F313E;
+    --paper: #F3EFE6;
+    --safety: #E8590C;
+    --steel: #5C7080;
+    --ink: #1C1C1C;
+    --line: #D8D2C4;
+    --line-dark: #33454F;
+    --ok: #2E7D46;
+    --err: #C0392B;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    line-height: 1.6;
+  }
+  header {
+    background: var(--navy);
+    color: var(--paper);
+    padding: 28px 20px;
+  }
+  header .inner { max-width: 640px; margin: 0 auto; }
+  header .eyebrow { font-size: 0.85rem; color: var(--steel); margin-bottom: 4px; display: block; }
+  header h1 { margin: 0; font-size: 1.6rem; font-weight: 900; }
+  header p { margin: 8px 0 0; color: #C6CCD1; font-size: 0.9rem; }
+
+  main { max-width: 640px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .card .desc {
+    margin: 0 0 16px;
+    font-size: 0.85rem;
+    color: var(--steel);
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 14px 0 6px;
+  }
+  label:first-of-type { margin-top: 0; }
+  .hint { font-weight: 400; color: var(--steel); font-size: 0.78rem; }
+
+  input[type=text], input[type=number], input[type=date], input[type=password], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--safety);
+    outline-offset: 1px;
+  }
+
+  .file-drop {
+    border: 2px dashed var(--line);
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--steel);
+    font-size: 0.9rem;
+  }
+  .file-drop.drag { border-color: var(--safety); color: var(--safety); }
+  #fileInput { display: none; }
+
+  .thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .thumb {
+    position: relative;
+    width: 72px; height: 96px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    background: #eee;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb .badge {
+    position: absolute; top: 2px; left: 2px;
+    background: var(--navy); color: var(--paper);
+    font-size: 0.65rem; padding: 1px 5px; border-radius: 2px;
+  }
+  .thumb .remove {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,0.6); color: #fff;
+    border: none; width: 18px; height: 18px; border-radius: 50%;
+    font-size: 0.7rem; cursor: pointer; line-height: 1;
+  }
+
+  button.primary {
+    width: 100%;
+    background: var(--safety);
+    color: #fff;
+    border: none;
+    padding: 13px 16px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 18px;
+  }
+  button.primary:disabled { opacity: 0.5; cursor: default; }
+  button.primary:hover:not(:disabled) { background: #C24C0D; }
+
+  .log {
+    margin-top: 16px;
+    font-size: 0.85rem;
+    font-family: ui-monospace, monospace;
+    white-space: pre-wrap;
+    background: var(--navy);
+    color: #C6CCD1;
+    border-radius: 4px;
+    padding: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+  }
+  .log.show { display: block; }
+  .log .ok { color: #7FD99A; }
+  .log .err { color: #FF8A75; }
+
+  .success-box {
+    display: none;
+    margin-top: 16px;
+    padding: 14px;
+    background: #EAF6EE;
+    border: 1px solid var(--ok);
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  .success-box.show { display: block; }
+  .success-box a { color: var(--ok); font-weight: 700; }
+
+  details summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--steel);
+    margin-top: 8px;
+  }
+  .token-warning {
+    font-size: 0.78rem;
+    color: var(--steel);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <span class="eyebrow">전국금속노동조합 현대중공업지부</span>
+    <h1>간행물 올리기</h1>
+    <p>여기서 정보를 입력하면 GitHub 저장소에 자동으로 올라갑니다. 코드를 직접 만질 필요 없습니다.</p>
+  </div>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>1. 연결 설정</h2>
+    <p class="desc">최초 1회만 입력하면 됩니다. 이 페이지를 닫지 않는 한 브라우저에 기억해둡니다.</p>
+
+    <label>GitHub 저장소 소유자 <span class="hint">(보통 그대로 두시면 됩니다)</span></label>
+    <input type="text" id="ghOwner" value="nsc8410">
+
+    <label>저장소 이름</label>
+    <input type="text" id="ghRepo" value="kmwuhhi">
+
+    <label>개인 액세스 토큰(PAT) <span class="hint">비밀번호처럼 취급하세요</span></label>
+    <input type="password" id="ghToken" placeholder="ghp_ 로 시작하는 문자열 붙여넣기">
+
+    <details>
+      <summary>토큰이 뭐고 어떻게 만드나요?</summary>
+      <div class="token-warning">
+        이 도구가 여러분 대신 GitHub 저장소에 파일을 올리려면 "허락 열쇠"가 필요합니다.<br><br>
+        1. github.com에서 우측 상단 프로필 사진 클릭 → Settings<br>
+        2. 맨 아래 Developer settings 클릭<br>
+        3. Personal access tokens → Fine-grained tokens → Generate new token<br>
+        4. Repository access에서 "Only select repositories" 선택 → kmwuhhi 저장소만 체크<br>
+        5. Permissions → Repository permissions → "Contents"를 Read and write로 설정<br>
+        6. Generate token 클릭 → 나오는 토큰(ghp_로 시작)을 복사해서 위 칸에 붙여넣기<br><br>
+        이 토큰은 이 브라우저 탭에만 저장되고, 서버로 전송되지 않습니다(GitHub에 직접 요청을 보낼 때만 사용). 아무에게도 공유하지 마세요.
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>2. 새 간행물 정보</h2>
+
+    <label>카테고리</label>
+    <select id="fCategory">
+      <option value="민주항해">민주항해</option>
+      <option value="쟁대위">쟁대위</option>
+      <option value="소식지">소식지</option>
+      <option value="__custom__">직접 입력...</option>
+    </select>
+    <input type="text" id="fCategoryCustom" placeholder="새 카테고리 이름" style="margin-top:8px; display:none;">
+
+    <label>제목</label>
+    <input type="text" id="fTitle" placeholder="예: 2026년 하반기 임금·단체협약 교섭 속보">
+
+    <div class="row2">
+      <div>
+        <label>호수 (No.) <span class="hint">정렬 기준</span></label>
+        <input type="number" id="fNo" placeholder="예: 248">
+      </div>
+      <div>
+        <label>발행일 <span class="hint">모르면 비워두세요</span></label>
+        <input type="date" id="fDate">
+      </div>
+    </div>
+
+    <label>요약 <span class="hint">선택 사항, 한두 줄</span></label>
+    <textarea id="fSummary" placeholder="목록에 짧게 표시될 설명"></textarea>
+
+    <label>사진 파일 <span class="hint">여러 장이면 페이지 순서대로 선택하세요</span></label>
+    <div class="file-drop" id="fileDrop">
+      사진을 여기로 끌어놓거나 클릭해서 선택하세요<br>(JPG, PNG · 여러 장 선택 가능)
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <div class="thumbs" id="thumbs"></div>
+
+    <button class="primary" id="submitBtn">사이트에 올리기</button>
+
+    <div class="log" id="log"></div>
+    <div class="success-box" id="successBox"></div>
+  </div>
+
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var els = {
+    owner: document.getElementById("ghOwner"),
+    repo: document.getElementById("ghRepo"),
+    token: document.getElementById("ghToken"),
+    category: document.getElementById("fCategory"),
+    categoryCustom: document.getElementById("fCategoryCustom"),
+    title: document.getElementById("fTitle"),
+    no: document.getElementById("fNo"),
+    date: document.getElementById("fDate"),
+    summary: document.getElementById("fSummary"),
+    fileDrop: document.getElementById("fileDrop"),
+    fileInput: document.getElementById("fileInput"),
+    thumbs: document.getElementById("thumbs"),
+    submitBtn: document.getElementById("submitBtn"),
+    log: document.getElementById("log"),
+    successBox: document.getElementById("successBox")
+  };
+
+  var selectedFiles = [];
+
+  els.category.addEventListener("change", function () {
+    els.categoryCustom.style.display = els.category.value === "__custom__" ? "block" : "none";
+  });
+
+  function activeCategory() {
+    return els.category.value === "__custom__" ? els.categoryCustom.value.trim() : els.category.value;
+  }
+
+  // ---------- 파일 선택 UI ----------
+  els.fileDrop.addEventListener("click", function () { els.fileInput.click(); });
+  els.fileDrop.addEventListener("dragover", function (e) { e.preventDefault(); els.fileDrop.classList.add("drag"); });
+  els.fileDrop.addEventListener("dragleave", function () { els.fileDrop.classList.remove("drag"); });
+  els.fileDrop.addEventListener("drop", function (e) {
+    e.preventDefault();
+    els.fileDrop.classList.remove("drag");
+    addFiles(e.dataTransfer.files);
+  });
+  els.fileInput.addEventListener("change", function () {
+    addFiles(els.fileInput.files);
+    els.fileInput.value = "";
+  });
+
+  function addFiles(fileList) {
+    Array.from(fileList).forEach(function (f) {
+      if (f.type.indexOf("image/") === 0) selectedFiles.push(f);
+    });
+    renderThumbs();
+  }
+
+  function renderThumbs() {
+    els.thumbs.innerHTML = "";
+    selectedFiles.forEach(function (f, i) {
+      var wrap = document.createElement("div");
+      wrap.className = "thumb";
+
+      var img = document.createElement("img");
+      var reader = new FileReader();
+      reader.onload = function (e) { img.src = e.target.result; };
+      reader.readAsDataURL(f);
+      wrap.appendChild(img);
+
+      var badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = (i + 1);
+      wrap.appendChild(badge);
+
+      var rm = document.createElement("button");
+      rm.className = "remove";
+      rm.type = "button";
+      rm.textContent = "✕";
+      rm.addEventListener("click", function () {
+        selectedFiles.splice(i, 1);
+        renderThumbs();
+      });
+      wrap.appendChild(rm);
+
+      els.thumbs.appendChild(wrap);
+    });
+  }
+
+  // ---------- 로그 ----------
+  function log(msg, cls) {
+    els.log.classList.add("show");
+    var line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    els.log.appendChild(line);
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  // ---------- GitHub API 헬퍼 ----------
+  function ghHeaders(token) {
+    return {
+      "Authorization": "token " + token,
+      "Accept": "application/vnd.github+json"
+    };
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = reader.result;
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function extOf(filename) {
+    var m = /\.([a-zA-Z0-9]+)$/.exec(filename);
+    return m ? m[1].toLowerCase() : "jpg";
+  }
+
+  function putFile(owner, repo, token, path, base64Content, message) {
+    return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/" + path, {
+      method: "PUT",
+      headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(token)),
+      body: JSON.stringify({ message: message, content: base64Content, branch: "main" })
+    }).then(function (res) {
+      if (!res.ok) return res.json().then(function (err) { throw new Error(path + " 업로드 실패: " + (err.message || res.status)); });
+      return res.json();
+    });
+  }
+
+  function getFile(owner, repo, token, path) {
+    return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=main", {
+      headers: ghHeaders(token)
+    }).then(function (res) {
+      if (!res.ok) throw new Error(path + " 조회 실패: " + res.status);
+      return res.json();
+    }).then(function (data) {
+      var jsonText = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
+      return { sha: data.sha, data: JSON.parse(jsonText) };
+    });
+  }
+
+  function utf8ToBase64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  // ---------- 제출 ----------
+  els.submitBtn.addEventListener("click", function () {
+    els.log.innerHTML = "";
+    els.log.classList.remove("show");
+    els.successBox.classList.remove("show");
+
+    var owner = els.owner.value.trim();
+    var repo = els.repo.value.trim();
+    var token = els.token.value.trim();
+    var category = activeCategory();
+    var title = els.title.value.trim();
+    var no = parseInt(els.no.value, 10);
+    var date = els.date.value;
+    var summary = els.summary.value.trim();
+
+    if (!owner || !repo || !token) { log("연결 설정(저장소, 토큰)을 먼저 입력해주세요.", "err"); return; }
+    if (!category) { log("카테고리를 입력해주세요.", "err"); return; }
+    if (!title) { log("제목을 입력해주세요.", "err"); return; }
+    if (!no && no !== 0) { log("호수(No.)를 입력해주세요.", "err"); return; }
+    if (selectedFiles.length === 0) { log("사진을 최소 1장 올려주세요.", "err"); return; }
+
+    els.submitBtn.disabled = true;
+    els.submitBtn.textContent = "올리는 중...";
+
+    var folderSlug = String(no);
+    var uploadedPaths = [];
+
+    var chain = Promise.resolve();
+    selectedFiles.forEach(function (file, i) {
+      chain = chain.then(function () {
+        log("사진 " + (i + 1) + "/" + selectedFiles.length + " 업로드 중...");
+        return fileToBase64(file).then(function (b64) {
+          var path = "publications/" + folderSlug + "/" + (i + 1) + "." + extOf(file.name);
+          return putFile(owner, repo, token, path, b64, "간행물 " + no + "호 이미지 추가").then(function () {
+            uploadedPaths.push(path);
+            log("사진 " + (i + 1) + " 완료", "ok");
+          });
+        });
+      });
+    });
+
+    chain
+      .then(function () {
+        log("목록 파일(publications.json) 갱신 중...");
+        return getFile(owner, repo, token, "data/publications.json");
+      })
+      .then(function (result) {
+        var list = result.data;
+        var entry = {
+          no: no,
+          category: category,
+          title: title,
+          date: date || "",
+          summary: summary || "",
+          pages: uploadedPaths
+        };
+        list.unshift(entry);
+        var newContent = utf8ToBase64(JSON.stringify(list, null, 2));
+        return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/data/publications.json", {
+          method: "PUT",
+          headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(token)),
+          body: JSON.stringify({
+            message: "간행물 추가: " + title,
+            content: newContent,
+            sha: result.sha,
+            branch: "main"
+          })
+        }).then(function (res) {
+          if (!res.ok) return res.json().then(function (err) { throw new Error("목록 갱신 실패: " + (err.message || res.status)); });
+        });
+      })
+      .then(function () {
+        log("완료!", "ok");
+        els.successBox.innerHTML = "업로드가 완료됐습니다. 1~2분 후 사이트에서 확인하세요.<br>" +
+          "<a href='https://" + owner + ".github.io/" + repo + "/' target='_blank'>사이트 열기 →</a>";
+        els.successBox.classList.add("show");
+        selectedFiles = [];
+        renderThumbs();
+        els.title.value = "";
+        els.no.value = "";
+        els.date.value = "";
+        els.summary.value = "";
+      })
+      .catch(function (err) {
+        log("오류: " + err.message, "err");
+      })
+      .finally(function () {
+        els.submitBtn.disabled = false;
+        els.submitBtn.textContent = "사이트에 올리기";
+      });
+  });
+})();
+</script>
+
+</body>
+</html>
