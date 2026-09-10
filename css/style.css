@@ -127,6 +127,34 @@ body {
   color: #16222C;
   font-weight: 700;
 }
+.year-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.year-filters[hidden] {
+  display: none;
+}
+
+.year-filters button {
+  padding: 6px 11px;
+  border-radius: 3px;
+  border: 1px solid var(--line-dark);
+  background: transparent;
+  color: #9AA7AE;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.year-filters button[aria-pressed="true"] {
+  background: var(--navy);
+  border-color: var(--safety);
+  color: var(--safety);
+  font-weight: 700;
+}
 
 /* ---------- Archive list ---------- */
 
