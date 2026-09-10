@@ -203,3 +203,139 @@
     if (pub.body) {
       lastFocusedEl = document.activeElement;
       currentPages = [];
+      viewerNo.textContent = pub.noLabel ? pub.noLabel : ("No." + pub.no);
+      viewerTitle.textContent = pub.title;
+      viewerImage.hidden = true;
+      viewerImage.src = "";
+      viewerText.hidden = false;
+      viewerText.textContent = pub.body;
+      viewerPageCount.textContent = "";
+      viewerPrev.hidden = true;
+      viewerNext.hidden = true;
+      if (pub.sourceUrl) {
+        viewerDownload.hidden = false;
+        viewerDownload.href = pub.sourceUrl;
+        viewerDownload.textContent = "원문 보기";
+        viewerDownload.removeAttribute("download");
+      } else {
+        viewerDownload.hidden = true;
+      }
+      viewerEl.hidden = false;
+      document.body.style.overflow = "hidden";
+      viewerClose.focus();
+      return;
+    }
+
+    currentPages = getPageList(pub);
+    currentIndex = 0;
+    if (!currentPages.length) return;
+
+    // PDF 한 개짜리는 뷰어 대신 새 탭에서 바로 열기 (브라우저 내장 PDF 뷰어 사용)
+    if (currentPages.length === 1 && isPdf(currentPages[0])) {
+      window.open(currentPages[0], "_blank", "noopener");
+      return;
+    }
+
+    lastFocusedEl = document.activeElement;
+    viewerNo.textContent = pub.noLabel ? pub.noLabel : ("No." + pub.no);
+    viewerTitle.textContent = pub.title;
+    viewerImage.hidden = false;
+    viewerText.hidden = true;
+    viewerDownload.hidden = false;
+    viewerDownload.setAttribute("download", "");
+    viewerDownload.textContent = "원본 저장";
+    viewerEl.hidden = false;
+    document.body.style.overflow = "hidden";
+    showPage();
+    viewerClose.focus();
+  }
+
+  function showPage() {
+    var src = currentPages[currentIndex];
+    viewerImage.src = src;
+    viewerImage.alt = viewerTitle.textContent + " " + (currentIndex + 1) + "페이지";
+    viewerDownload.href = src;
+    viewerPageCount.textContent = (currentIndex + 1) + " / " + currentPages.length;
+    viewerPrev.hidden = currentPages.length <= 1;
+    viewerNext.hidden = currentPages.length <= 1;
+    viewerPrev.disabled = currentIndex === 0;
+    viewerNext.disabled = currentIndex === currentPages.length - 1;
+  }
+
+  function closeViewer() {
+    viewerEl.hidden = true;
+    document.body.style.overflow = "";
+    viewerImage.src = "";
+    viewerText.textContent = "";
+    if (lastFocusedEl) lastFocusedEl.focus();
+  }
+
+  function goPrev() {
+    if (currentIndex > 0) { currentIndex -= 1; showPage(); }
+  }
+  function goNext() {
+    if (currentIndex < currentPages.length - 1) { currentIndex += 1; showPage(); }
+  }
+
+  viewerClose.addEventListener("click", closeViewer);
+  viewerPrev.addEventListener("click", goPrev);
+  viewerNext.addEventListener("click", goNext);
+
+  viewerEl.addEventListener("click", function (e) {
+    if (e.target === viewerEl) closeViewer();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (viewerEl.hidden) return;
+    if (e.key === "Escape") closeViewer();
+    if (e.key === "ArrowLeft") goPrev();
+    if (e.key === "ArrowRight") goNext();
+  });
+
+  // 모바일 스와이프로 페이지 넘기기
+  var touchStartX = null;
+  viewerEl.addEventListener("touchstart", function (e) {
+    touchStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+  viewerEl.addEventListener("touchend", function (e) {
+    if (touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) {
+      if (dx > 0) goPrev(); else goNext();
+    }
+    touchStartX = null;
+  }, { passive: true });
+
+  // ---------- PWA: service worker registration ----------
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("service-worker.js").catch(function (err) {
+        console.warn("Service worker registration failed:", err);
+      });
+    });
+  }
+
+  // ---------- PWA: install prompt ----------
+  var deferredPrompt = null;
+  var installBanner = document.getElementById("installBanner");
+  var installBtn = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBanner.hidden = false;
+  });
+
+  installBtn.addEventListener("click", function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(function () {
+      deferredPrompt = null;
+      installBanner.hidden = true;
+    });
+  });
+
+  window.addEventListener("appinstalled", function () {
+    installBanner.hidden = true;
+  });
+})();
