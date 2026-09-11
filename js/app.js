@@ -49,7 +49,13 @@
 
     filtered
       .slice()
-      .sort(function (a, b) { return b.no - a.no; })
+      .sort(function (a, b) {
+        // 날짜가 있는 항목을 우선 최신순으로, 날짜 없는 옛 자료는 그 아래에서 호수순
+        var da = a.date || "";
+        var db = b.date || "";
+        if (da !== db) return db.localeCompare(da);
+        return b.no - a.no;
+      })
       .forEach(function (p) {
         var btn = document.createElement("button");
         btn.type = "button";
