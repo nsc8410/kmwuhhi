@@ -291,11 +291,26 @@
     viewerClose.focus();
   }
 
+  function isExternal(url) {
+    return /^https?:\/\//i.test(url || "");
+  }
+
   function showPage() {
     var src = currentPages[currentIndex];
     viewerImage.src = src;
     viewerImage.alt = viewerTitle.textContent + " " + (currentIndex + 1) + "페이지";
     viewerDownload.href = src;
+    if (isExternal(src)) {
+      // 외부(Flickr 등) 이미지는 브라우저 보안 정책상 강제 다운로드가 안 되므로 새 탭으로 열기
+      viewerDownload.removeAttribute("download");
+      viewerDownload.target = "_blank";
+      viewerDownload.rel = "noopener";
+      viewerDownload.textContent = "새 탭에서 열기 (우클릭 저장)";
+    } else {
+      viewerDownload.setAttribute("download", "");
+      viewerDownload.removeAttribute("target");
+      viewerDownload.textContent = "원본 저장";
+    }
     viewerPageCount.textContent = (currentIndex + 1) + " / " + currentPages.length;
     viewerPrev.hidden = currentPages.length <= 1;
     viewerNext.hidden = currentPages.length <= 1;
