@@ -1,10 +1,16 @@
 (function () {
   "use strict";
 
+  var homeView = document.getElementById("homeView");
+  var listView = document.getElementById("listView");
+  var catCardsEl = document.getElementById("catCards");
+  var homeSearchInput = document.getElementById("homeSearchInput");
+  var backBtn = document.getElementById("backBtn");
+  var listHeadingEl = document.getElementById("listHeading");
+
   var pubListEl = document.getElementById("pubList");
   var emptyStateEl = document.getElementById("emptyState");
   var searchInput = document.getElementById("searchInput");
-  var catFiltersEl = document.getElementById("catFilters");
   var yearFiltersEl = document.getElementById("yearFilters");
 
   var allPubs = [];
@@ -31,11 +37,64 @@
     return "연도 미상";
   }
 
+  // ---------- 화면 전환 (홈 카드 ↔ 목록) ----------
+  function showHomeView() {
+    activeCategory = "전체";
+    activeYear = "전체";
+    searchTerm = "";
+    homeSearchInput.value = "";
+    buildCategoryCards();
+    listView.hidden = true;
+    homeView.hidden = false;
+  }
+
+  function showListView(cat, presetSearch) {
+    activeCategory = cat;
+    activeYear = "전체";
+    searchTerm = presetSearch || "";
+    searchInput.value = searchTerm;
+    listHeadingEl.textContent = cat === "전체" ? "전체 간행물" : cat;
+    homeView.hidden = true;
+    listView.hidden = false;
+    buildYearFilters();
+    render();
+  }
+
+  backBtn.addEventListener("click", showHomeView);
+
+  homeSearchInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && homeSearchInput.value.trim()) {
+      showListView("전체", homeSearchInput.value.trim());
+    }
+  });
+
+  function buildCategoryCards() {
+    var cats = Array.from(new Set(allPubs.map(function (p) { return p.category; })));
+    catCardsEl.innerHTML = "";
+
+    var allCard = document.createElement("button");
+    allCard.type = "button";
+    allCard.className = "cat-card cat-card-all";
+    allCard.innerHTML = '<span class="cat-card-name">전체 보기</span><span class="cat-card-count">' + allPubs.length + '건</span>';
+    allCard.addEventListener("click", function () { showListView("전체"); });
+    catCardsEl.appendChild(allCard);
+
+    cats.forEach(function (cat) {
+      var count = allPubs.filter(function (p) { return p.category === cat; }).length;
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "cat-card";
+      card.innerHTML = '<span class="cat-card-name">' + cat + '</span><span class="cat-card-count">' + count + '건</span>';
+      card.addEventListener("click", function () { showListView(cat); });
+      catCardsEl.appendChild(card);
+    });
+  }
+
   function render() {
     var filtered = allPubs.filter(function (p) {
       var matchesCat = activeCategory === "전체" || p.category === activeCategory;
       var matchesYear = activeYear === "전체" || getYear(p) === activeYear;
-      var matchesSearch = !searchTerm || (p.title + " " + (p.summary || "")).toLowerCase().indexOf(searchTerm) !== -1;
+      var matchesSearch = !searchTerm || (p.title + " " + (p.summary || "")).toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
       return matchesCat && matchesYear && matchesSearch;
     });
 
@@ -100,29 +159,6 @@
       });
   }
 
-  function buildCategoryFilters() {
-    var cats = ["전체"].concat(
-      Array.from(new Set(allPubs.map(function (p) { return p.category; })))
-    );
-    catFiltersEl.innerHTML = "";
-    cats.forEach(function (cat) {
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = cat;
-      btn.setAttribute("aria-pressed", cat === activeCategory ? "true" : "false");
-      btn.addEventListener("click", function () {
-        activeCategory = cat;
-        activeYear = "전체";
-        Array.from(catFiltersEl.children).forEach(function (b) {
-          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
-        });
-        buildYearFilters();
-        render();
-      });
-      catFiltersEl.appendChild(btn);
-    });
-  }
-
   // 선택된 카테고리 안에 등장하는 연도들로 연도 버튼 목록을 만듦.
   // "전체" 카테고리이거나 연도가 1종류뿐이면 연도 줄 자체를 숨김.
   function buildYearFilters() {
@@ -168,7 +204,7 @@
   }
 
   searchInput.addEventListener("input", function (e) {
-    searchTerm = e.target.value.trim().toLowerCase();
+    searchTerm = e.target.value.trim();
     render();
   });
 
@@ -176,8 +212,7 @@
     .then(function (res) { return res.json(); })
     .then(function (data) {
       allPubs = data;
-      buildCategoryFilters();
-      render();
+      showHomeView();
     })
     .catch(function (err) {
       pubListEl.innerHTML = "<p class='empty-state'>간행물 목록을 불러오지 못했습니다.</p>";
