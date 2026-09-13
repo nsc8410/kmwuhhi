@@ -39,6 +39,23 @@ body {
   padding: 48px 20px 32px;
 }
 
+.admin-link {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  color: #9AA7AE;
+  font-size: 0.78rem;
+  text-decoration: none;
+  border: 1px solid var(--line-dark);
+  padding: 5px 10px;
+  border-radius: 3px;
+}
+
+.admin-link:hover {
+  color: var(--safety);
+  border-color: var(--safety);
+}
+
 .header-inner {
   max-width: var(--max-w);
   margin: 0 auto;
