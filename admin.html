@@ -179,6 +179,16 @@
     line-height: 1.5;
   }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .remember-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--steel);
+    margin-top: 10px;
+  }
+  .remember-row input { width: auto; margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -205,6 +215,11 @@
 
     <label>개인 액세스 토큰(PAT) <span class="hint">비밀번호처럼 취급하세요</span></label>
     <input type="password" id="ghToken" placeholder="ghp_ 로 시작하는 문자열 붙여넣기">
+
+    <label class="remember-row">
+      <input type="checkbox" id="rememberToken">
+      <span>이 브라우저에 저장해서 다음에 자동으로 채우기 <span class="hint">(내 개인 컴퓨터일 때만 권장)</span></span>
+    </label>
 
     <details>
       <summary>토큰이 뭐고 어떻게 만드나요?</summary>
@@ -282,12 +297,43 @@
     fileDrop: document.getElementById("fileDrop"),
     fileInput: document.getElementById("fileInput"),
     thumbs: document.getElementById("thumbs"),
+    remember: document.getElementById("rememberToken"),
     submitBtn: document.getElementById("submitBtn"),
     log: document.getElementById("log"),
     successBox: document.getElementById("successBox")
   };
 
   var selectedFiles = [];
+
+  // ---------- 토큰 저장/불러오기 (체크했을 때만) ----------
+  var STORAGE_KEY = "hhiunAdminToken";
+  (function loadSaved() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        els.owner.value = parsed.owner || els.owner.value;
+        els.repo.value = parsed.repo || els.repo.value;
+        els.token.value = parsed.token || "";
+        els.remember.checked = true;
+      }
+    } catch (e) { /* 저장된 값 없음, 무시 */ }
+  })();
+
+  function syncSavedToken() {
+    if (els.remember.checked) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        owner: els.owner.value.trim(),
+        repo: els.repo.value.trim(),
+        token: els.token.value.trim()
+      }));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  els.remember.addEventListener("change", syncSavedToken);
+  els.token.addEventListener("change", syncSavedToken);
 
   els.category.addEventListener("change", function () {
     els.categoryCustom.style.display = els.category.value === "__custom__" ? "block" : "none";
