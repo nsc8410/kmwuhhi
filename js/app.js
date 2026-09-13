@@ -68,8 +68,17 @@
     }
   });
 
+  var CATEGORY_ORDER = ["민주항해", "쟁대위", "교섭속보"];
+
   function buildCategoryCards() {
     var cats = Array.from(new Set(allPubs.map(function (p) { return p.category; })));
+    cats.sort(function (a, b) {
+      var ia = CATEGORY_ORDER.indexOf(a);
+      var ib = CATEGORY_ORDER.indexOf(b);
+      if (ia === -1) ia = CATEGORY_ORDER.length;
+      if (ib === -1) ib = CATEGORY_ORDER.length;
+      return ia - ib;
+    });
     catCardsEl.innerHTML = "";
 
     var allCard = document.createElement("button");
