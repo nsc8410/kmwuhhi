@@ -171,8 +171,10 @@ body {
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  padding: 6px 0;
+  padding: 4px 0 0;
   flex: 0 0 100%;
+  text-align: left;
+  margin-bottom: 2px;
 }
 
 .list-heading {
