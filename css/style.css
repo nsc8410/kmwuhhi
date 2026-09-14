@@ -114,31 +114,47 @@ body {
 /* ---------- Board tabs (official GNB style) ---------- */
 
 .board-tabs {
-  background: var(--navy-2);
-  display: flex;
-  gap: 2px;
+  background: var(--navy);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
   max-width: var(--max-w);
   margin: 0 auto;
-  padding: 0 20px;
-  overflow-x: auto;
+  padding: 20px;
 }
 
 .board-tabs button {
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  color: #9AA7AE;
+  background: var(--navy-2);
+  border: 1px solid var(--line-dark);
+  border-top: 4px solid var(--safety-dim);
+  color: var(--paper);
   font-family: inherit;
-  font-size: 0.92rem;
-  font-weight: 700;
-  padding: 14px 16px 11px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  padding: 20px 14px;
   cursor: pointer;
-  white-space: nowrap;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.board-tabs button .tab-count {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #9AA7AE;
 }
 
 .board-tabs button[aria-selected="true"] {
-  color: var(--paper);
-  border-bottom-color: var(--safety);
+  background: var(--safety);
+  border-top-color: var(--safety);
+  border-color: var(--safety);
+  color: #fff;
+}
+.board-tabs button[aria-selected="true"] .tab-count { color: rgba(255,255,255,0.85); }
+
+@media (max-width: 560px) {
+  .board-tabs { grid-template-columns: 1fr 1fr; }
 }
 
 /* ---------- Toolbar ---------- */
