@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HD 브리핑 · 현대중공업지부</title>
+<meta name="theme-color" content="#16222C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  :root { --brief-hi: rgba(232, 89, 12, 0.28); }
+
+  body { background: var(--navy); }
+
+  .brief-top {
+    background: var(--navy);
+    padding: 18px 20px 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .brief-top-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .brief-back {
+    color: #9AA7AE;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .brief-back:hover { color: var(--safety); }
+  .brief-title {
+    color: var(--paper);
+    font-weight: 900;
+    font-size: 1.05rem;
+    margin: 0;
+  }
+  .brief-spacer { width: 60px; }
+
+  .brief-tabs {
+    max-width: 900px;
+    margin: 14px auto 0;
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 14px;
+  }
+  .brief-tab {
+    background: transparent;
+    border: 1px solid var(--line-dark);
+    color: #C6CCD1;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .brief-tab[aria-pressed="true"] {
+    background: var(--safety);
+    border-color: var(--safety);
+    color: #16222C;
+  }
+
+  .brief-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 8px 20px 40px;
+    max-width: 940px;
+    margin: 0 auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .brief-track::-webkit-scrollbar { display: none; }
+
+  .brief-card {
+    scroll-snap-align: center;
+    flex: 0 0 78vw;
+    max-width: 360px;
+    min-height: 62vh;
+    background: var(--navy-2);
+    border: 1px solid var(--line-dark);
+    border-radius: 6px;
+    padding: 28px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    color: var(--paper);
+    text-align: left;
+  }
+
+  .brief-eyebrow {
+    font-size: 0.78rem;
+    color: var(--steel);
+    letter-spacing: 0.02em;
+    margin-bottom: 24px;
+  }
+
+  .brief-headline-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+  .brief-headline {
+    font-size: clamp(1.7rem, 6vw, 2.4rem);
+    font-weight: 900;
+    line-height: 1.28;
+    margin: 0 0 20px;
+  }
+  .brief-headline mark {
+    background: var(--brief-hi);
+    color: var(--paper);
+    padding: 2px 6px;
+    border-radius: 2px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .brief-summary {
+    font-size: 0.95rem;
+    color: #C6CCD1;
+    line-height: 1.6;
+    margin: 0 0 4px;
+  }
+  .brief-meta {
+    font-size: 0.8rem;
+    color: var(--steel);
+    margin: 4px 0 0;
+  }
+
+  .brief-cta {
+    margin-top: 24px;
+    align-self: flex-start;
+    color: var(--safety);
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+
+  .brief-dots {
+    max-width: 900px;
+    margin: 0 auto 40px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  .brief-dots span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--line-dark);
+  }
+  .brief-dots span.active { background: var(--safety); }
+
+  .brief-empty {
+    max-width: 900px;
+    margin: 60px auto;
+    text-align: center;
+    color: var(--steel);
+    padding: 0 20px;
+  }
+
+  @media (min-width: 640px) {
+    .brief-card { flex-basis: 320px; min-height: 420px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="brief-top">
+  <div class="brief-top-inner">
+    <a href="index.html" class="brief-back">← 사이트로</a>
+    <h1 class="brief-title">HD 브리핑</h1>
+    <span class="brief-spacer" aria-hidden="true"></span>
+  </div>
+  <div class="brief-tabs" id="briefTabs" role="group" aria-label="브리핑 종류"></div>
+</header>
+
+<main>
+  <div class="brief-track" id="briefTrack"></div>
+  <div class="brief-dots" id="briefDots"></div>
+  <p class="brief-empty" id="briefEmpty" hidden>아직 등록된 내용이 없습니다.</p>
+</main>
+
+<div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="간행물 보기">
+  <div class="viewer-top">
+    <div class="viewer-title">
+      <span id="viewerNo"></span>
+      <span id="viewerTitle"></span>
+    </div>
+    <div class="viewer-actions">
+      <a id="viewerDownload" href="#" download class="viewer-btn">원본 저장</a>
+      <button id="viewerClose" type="button" class="viewer-btn viewer-close" aria-label="닫기">닫기 ✕</button>
+    </div>
+  </div>
+  <div class="viewer-stage">
+    <button id="viewerPrev" type="button" class="viewer-nav viewer-nav-prev" aria-label="이전 페이지">‹</button>
+    <img id="viewerImage" alt="">
+    <div id="viewerText" class="viewer-text" hidden></div>
+    <button id="viewerNext" type="button" class="viewer-nav viewer-nav-next" aria-label="다음 페이지">›</button>
+  </div>
+  <div class="viewer-bottom">
+    <span id="viewerPageCount"></span>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var BRIEF_CATEGORIES = ["교섭속보", "쟁대위"];
+
+  var tabsEl = document.getElementById("briefTabs");
+  var trackEl = document.getElementById("briefTrack");
+  var dotsEl = document.getElementById("briefDots");
+  var emptyEl = document.getElementById("briefEmpty");
+
+  var allPubs = [];
+  var activeCat = BRIEF_CATEGORIES[0];
+
+  // 제목 중 핵심 구절에 형광펜 표시를 자동으로 입힘 (전체 제목을 강조)
+  function markTitle(title) {
+    var span = document.createElement("mark");
+    span.textContent = title;
+    return span;
+  }
+
+  function render() {
+    var items = allPubs
+      .filter(function (p) { return p.category === activeCat; })
+      .slice()
+      .sort(function (a, b) {
+        var da = a.date || "", db = b.date || "";
+        if (da !== db) return db.localeCompare(da);
+        return b.no - a.no;
+      });
+
+    trackEl.innerHTML = "";
+    dotsEl.innerHTML = "";
+
+    if (items.length === 0) {
+      emptyEl.hidden = false;
+      return;
+    }
+    emptyEl.hidden = true;
+
+    items.forEach(function (p, i) {
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "brief-card";
+      card.addEventListener("click", function () { openViewer(p); });
+
+      var eyebrow = document.createElement("div");
+      eyebrow.className = "brief-eyebrow";
+      eyebrow.textContent = p.category + " · " + (p.noLabel || ("No." + p.no)) + (p.date ? " · " + p.date.replace(/-/g, ".") : "");
+
+      var headWrap = document.createElement("div");
+      headWrap.className = "brief-headline-wrap";
+      var h2 = document.createElement("h2");
+      h2.className = "brief-headline";
+      h2.appendChild(markTitle(p.title));
+      headWrap.appendChild(h2);
+      if (p.summary) {
+        var summary = document.createElement("p");
+        summary.className = "brief-summary";
+        summary.textContent = p.summary;
+        headWrap.appendChild(summary);
+      }
+
+      var cta = document.createElement("div");
+      cta.className = "brief-cta";
+      cta.textContent = "자세히 보기 →";
+
+      card.appendChild(eyebrow);
+      card.appendChild(headWrap);
+      card.appendChild(cta);
+      trackEl.appendChild(card);
+
+      var dot = document.createElement("span");
+      if (i === 0) dot.className = "active";
+      dotsEl.appendChild(dot);
+    });
+  }
+
+  function buildTabs() {
+    tabsEl.innerHTML = "";
+    BRIEF_CATEGORIES.forEach(function (cat) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "brief-tab";
+      btn.textContent = cat;
+      btn.setAttribute("aria-pressed", cat === activeCat ? "true" : "false");
+      btn.addEventListener("click", function () {
+        activeCat = cat;
+        Array.from(tabsEl.children).forEach(function (b) {
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+        });
+        render();
+      });
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  // 스크롤 위치에 따라 하단 점 표시 갱신
+  trackEl.addEventListener("scroll", function () {
+    var cards = Array.from(trackEl.children);
+    if (!cards.length) return;
+    var trackCenter = trackEl.scrollLeft + trackEl.clientWidth / 2;
+    var closest = 0;
+    var closestDist = Infinity;
+    cards.forEach(function (c, i) {
+      var d = Math.abs((c.offsetLeft + c.offsetWidth / 2) - trackCenter);
+      if (d < closestDist) { closestDist = d; closest = i; }
+    });
+    Array.from(dotsEl.children).forEach(function (dot, i) {
+      dot.className = i === closest ? "active" : "";
+    });
+  });
+
+  fetch("data/publications.json")
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      allPubs = data;
+      buildTabs();
+      render();
+    })
+    .catch(function () {
+      emptyEl.textContent = "목록을 불러오지 못했습니다.";
+      emptyEl.hidden = false;
+    });
+
+  // ---------- 뷰어 (index.html의 것과 동일한 로직) ----------
+  var viewerEl = document.getElementById("viewer");
+  var viewerImage = document.getElementById("viewerImage");
+  var viewerText = document.getElementById("viewerText");
+  var viewerNo = document.getElementById("viewerNo");
+  var viewerTitle = document.getElementById("viewerTitle");
+  var viewerDownload = document.getElementById("viewerDownload");
+  var viewerPageCount = document.getElementById("viewerPageCount");
+  var viewerPrev = document.getElementById("viewerPrev");
+  var viewerNext = document.getElementById("viewerNext");
+  var viewerClose = document.getElementById("viewerClose");
+
+  var currentPages = [];
+  var currentIndex = 0;
+
+  function getPageList(pub) {
+    if (Array.isArray(pub.pages) && pub.pages.length) return pub.pages;
+    if (pub.file) return [pub.file];
+    return [];
+  }
+  function isPdf(url) { return /\.pdf(\?.*)?$/i.test(url || ""); }
+  function isExternal(url) { return /^https?:\/\//i.test(url || ""); }
+
+  function openViewer(pub) {
+    if (pub.body) {
+      currentPages = [];
+      viewerNo.textContent = pub.noLabel || ("No." + pub.no);
+      viewerTitle.textContent = pub.title;
+      viewerImage.hidden = true;
+      viewerText.hidden = false;
+      viewerText.textContent = pub.body;
+      viewerPrev.hidden = true;
+      viewerNext.hidden = true;
+      viewerDownload.hidden = true;
+      viewerEl.hidden = false;
+      document.body.style.overflow = "hidden";
+      return;
+    }
+    currentPages = getPageList(pub);
+    currentIndex = 0;
+    if (!currentPages.length) return;
+    if (currentPages.length === 1 && isPdf(currentPages[0])) {
+      window.open(currentPages[0], "_blank", "noopener");
+      return;
+    }
+    viewerNo.textContent = pub.noLabel || ("No." + pub.no);
+    viewerTitle.textContent = pub.title;
+    viewerImage.hidden = false;
+    viewerText.hidden = true;
+    viewerEl.hidden = false;
+    document.body.style.overflow = "hidden";
+    showPage();
+  }
+
+  function showPage() {
+    var src = currentPages[currentIndex];
+    viewerImage.src = src;
+    viewerDownload.href = src;
+    if (isExternal(src)) {
+      viewerDownload.removeAttribute("download");
+      viewerDownload.target = "_blank";
+      viewerDownload.textContent = "새 탭에서 열기 (우클릭 저장)";
+    } else {
+      viewerDownload.setAttribute("download", "");
+      viewerDownload.removeAttribute("target");
+      viewerDownload.textContent = "원본 저장";
+    }
+    viewerDownload.hidden = false;
+    viewerPageCount.textContent = (currentIndex + 1) + " / " + currentPages.length;
+    viewerPrev.hidden = currentPages.length <= 1;
+    viewerNext.hidden = currentPages.length <= 1;
+    viewerPrev.disabled = currentIndex === 0;
+    viewerNext.disabled = currentIndex === currentPages.length - 1;
+  }
+
+  function closeViewer() {
+    viewerEl.hidden = true;
+    document.body.style.overflow = "";
+    viewerImage.src = "";
+  }
+
+  viewerClose.addEventListener("click", closeViewer);
+  viewerPrev.addEventListener("click", function () { if (currentIndex > 0) { currentIndex--; showPage(); } });
+  viewerNext.addEventListener("click", function () { if (currentIndex < currentPages.length - 1) { currentIndex++; showPage(); } });
+  viewerEl.addEventListener("click", function (e) { if (e.target === viewerEl) closeViewer(); });
+  document.addEventListener("keydown", function (e) {
+    if (viewerEl.hidden) return;
+    if (e.key === "Escape") closeViewer();
+    if (e.key === "ArrowLeft" && currentIndex > 0) { currentIndex--; showPage(); }
+    if (e.key === "ArrowRight" && currentIndex < currentPages.length - 1) { currentIndex++; showPage(); }
+  });
+})();
+</script>
+</body>
+</html>
