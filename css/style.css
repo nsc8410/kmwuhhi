@@ -40,15 +40,15 @@ body {
 }
 
 .admin-link {
-  position: absolute;
-  top: 14px;
-  right: 20px;
-  color: #9AA7AE;
+  color: #C6CCD1;
   font-size: 0.78rem;
+  font-weight: 700;
   text-decoration: none;
   border: 1px solid var(--line-dark);
   padding: 5px 10px;
   border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .admin-link:hover {
