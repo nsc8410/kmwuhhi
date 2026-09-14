@@ -47,11 +47,12 @@
 
     tabsEl.innerHTML = "";
     options.forEach(function (cat) {
+      var count = cat === "전체" ? allPubs.length : allPubs.filter(function (p) { return p.category === cat; }).length;
       var btn = document.createElement("button");
       btn.type = "button";
       btn.setAttribute("role", "tab");
       btn.setAttribute("aria-selected", cat === activeCategory ? "true" : "false");
-      btn.textContent = cat;
+      btn.innerHTML = cat + '<span class="tab-count">' + count + '건</span>';
       btn.addEventListener("click", function () {
         activeCategory = cat;
         activeYear = "전체";
