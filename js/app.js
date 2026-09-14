@@ -9,8 +9,8 @@
   var searchTerm = "";
   var expandedCategory = null;
 
-  var CATEGORY_ORDER = ["교섭속보", "지부쟁대위", "각종제도"];
-  var FIXED_CATEGORIES = ["교섭속보", "지부쟁대위", "각종제도"]; // 내용이 없어도 항상 박스로 보여줄 카테고리
+  var CATEGORY_ORDER = ["교섭속보", "지부쟁대위", "각종제도"]; // data/categories.json을 못 읽어오면 이 기본값 사용
+  var FIXED_CATEGORIES = CATEGORY_ORDER;
 
   function formatDate(iso) {
     var d = new Date(iso + "T00:00:00");
@@ -138,8 +138,18 @@
     render();
   });
 
-  fetch("data/publications.json")
-    .then(function (res) { return res.json(); })
+  fetch("data/categories.json")
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (cats) {
+      if (Array.isArray(cats) && cats.length) {
+        CATEGORY_ORDER = cats;
+        FIXED_CATEGORIES = cats;
+      }
+    })
+    .catch(function () { /* 파일이 없으면 기본값 그대로 사용 */ })
+    .then(function () {
+      return fetch("data/publications.json").then(function (res) { return res.json(); });
+    })
     .then(function (data) {
       allPubs = data;
       render();
