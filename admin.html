@@ -301,10 +301,6 @@
 
     <label>카테고리</label>
     <select id="fCategory">
-      <option value="민주항해">민주항해</option>
-      <option value="쟁대위">쟁대위</option>
-      <option value="교섭속보">교섭속보</option>
-      <option value="소식지">소식지</option>
       <option value="__custom__">직접 입력...</option>
     </select>
     <input type="text" id="fCategoryCustom" placeholder="새 카테고리 이름" style="margin-top:8px; display:none;">
@@ -394,6 +390,29 @@
 
   var selectedFiles = [];
   var editingOriginal = null; // 수정 중인 원본 항목(참조 비교용)
+  var knownCategories = [];
+
+  // 카테고리 드롭다운을 data/categories.json 기준으로 채움 (카테고리 관리와 항상 동기화)
+  function loadCategoryOptions() {
+    fetch("data/categories.json?_=" + Date.now())
+      .then(function (res) { return res.ok ? res.json() : []; })
+      .then(function (cats) {
+        knownCategories = Array.isArray(cats) ? cats : [];
+        var current = els.category.value;
+        els.category.innerHTML = "";
+        knownCategories.forEach(function (c) {
+          var opt = document.createElement("option");
+          opt.value = c; opt.textContent = c;
+          els.category.appendChild(opt);
+        });
+        var customOpt = document.createElement("option");
+        customOpt.value = "__custom__"; customOpt.textContent = "직접 입력...";
+        els.category.appendChild(customOpt);
+        if (knownCategories.indexOf(current) >= 0) els.category.value = current;
+      })
+      .catch(function () { /* 파일이 아직 없으면 '직접 입력'만 남겨둠 */ });
+  }
+  loadCategoryOptions();
 
   // ---------- 토큰 저장/불러오기 (체크했을 때만) ----------
   var STORAGE_KEY = "hhiunAdminToken";
@@ -723,7 +742,7 @@
         editBtn.textContent = "수정";
         editBtn.addEventListener("click", function () {
           editingOriginal = item;
-          els.category.value = ["민주항해", "쟁대위", "교섭속보", "소식지"].indexOf(item.category) >= 0 ? item.category : "__custom__";
+          els.category.value = knownCategories.indexOf(item.category) >= 0 ? item.category : "__custom__";
           els.categoryCustom.style.display = els.category.value === "__custom__" ? "block" : "none";
           els.categoryCustom.value = els.category.value === "__custom__" ? item.category : "";
           els.title.value = item.title;
@@ -829,7 +848,7 @@
         var newList = list.slice();
         var tmp = newList[i - 1]; newList[i - 1] = newList[i]; newList[i] = tmp;
         clog("저장 중...");
-        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); })
+        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); loadCategoryOptions(); })
           .catch(function (err) { clog("오류: " + err.message, "err"); });
       });
 
@@ -840,7 +859,7 @@
         var newList = list.slice();
         var tmp = newList[i + 1]; newList[i + 1] = newList[i]; newList[i] = tmp;
         clog("저장 중...");
-        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); })
+        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); loadCategoryOptions(); })
           .catch(function (err) { clog("오류: " + err.message, "err"); });
       });
 
@@ -850,7 +869,7 @@
         if (!confirm("'" + cat + "' 박스를 삭제할까요? 이미 그 카테고리로 올려둔 글은 삭제되지 않고, 목록엔 계속 남아있습니다(박스 순서 목록에서만 빠짐).")) return;
         var newList = list.filter(function (c) { return c !== cat; });
         clog("저장 중...");
-        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); })
+        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); loadCategoryOptions(); })
           .catch(function (err) { clog("오류: " + err.message, "err"); });
       });
 
@@ -892,6 +911,7 @@
         clog("완료!", "ok");
         els.newCatInput.value = "";
         renderCatList(list);
+        loadCategoryOptions();
       });
     }).catch(function (err) {
       clog("오류: " + err.message, "err");
