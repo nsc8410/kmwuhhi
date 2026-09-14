@@ -1,7 +1,7 @@
 {
-  "name": "전국금속노동조합 현대중공업지부 간행물",
-  "short_name": "현중지부 간행물",
-  "description": "전국금속노동조합 현대중공업지부의 소식지 및 공식 간행물 아카이브",
+  "name": "전국금속노동조합 현대중공업지부",
+  "short_name": "소식채널",
+  "description": "전국금속노동조합 현대중공업지부의 소식채널",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
