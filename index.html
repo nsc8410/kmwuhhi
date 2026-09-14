@@ -38,29 +38,17 @@
 </header>
 
 <main>
-  <nav class="board-tabs" id="boardTabs" role="tablist" aria-label="카테고리"></nav>
-
   <section class="board-toolbar">
     <div class="board-toolbar-inner">
       <label class="search-field">
         <span class="visually-hidden">간행물 검색</span>
         <input type="search" id="searchInput" placeholder="제목으로 검색 (예: 임단협, 대의원대회)">
       </label>
-      <div class="year-filters" id="yearFilters" role="group" aria-label="연도 필터" hidden></div>
     </div>
   </section>
 
-  <section class="board" aria-labelledby="boardHeading">
-    <div class="board-inner">
-      <h2 id="boardHeading" class="visually-hidden">간행물 목록</h2>
-      <div class="board-head-row" aria-hidden="true">
-        <span class="col-no">번호</span>
-        <span class="col-title">제목</span>
-        <span class="col-date">날짜</span>
-      </div>
-      <div id="pubList" class="board-list"></div>
-      <p id="emptyState" class="empty-state" hidden>검색 조건에 맞는 간행물이 없습니다.</p>
-    </div>
+  <section class="panels" aria-label="카테고리별 간행물">
+    <div class="panels-inner" id="panelsWrap"></div>
   </section>
 
   <section class="install-banner" id="installBanner" hidden>
