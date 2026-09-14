@@ -193,6 +193,42 @@
 </head>
 <body>
 
+<div id="lockScreen" style="position:fixed;inset:0;z-index:999;background:#16222C;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <form id="lockForm" style="max-width:320px;width:100%;text-align:center;">
+    <p style="color:#F3EFE6;font-weight:900;font-size:1.1rem;margin:0 0 16px;">관리자 전용 페이지</p>
+    <input type="password" id="lockInput" placeholder="비밀번호" style="width:100%;padding:12px 14px;border:1px solid #33454F;background:#F3EFE6;border-radius:3px;font-size:0.95rem;margin-bottom:10px;">
+    <button type="submit" style="width:100%;padding:12px;background:#E8590C;color:#fff;border:none;border-radius:3px;font-weight:700;font-size:0.95rem;cursor:pointer;">확인</button>
+    <p id="lockError" style="color:#FF8A75;font-size:0.85rem;margin-top:10px;display:none;">비밀번호가 올바르지 않습니다.</p>
+  </form>
+</div>
+
+<script>
+(function () {
+  var PASS = "wjdcortlf1";
+  var SESSION_KEY = "hhiunAdminUnlocked";
+  var lockScreen = document.getElementById("lockScreen");
+  var lockForm = document.getElementById("lockForm");
+  var lockInput = document.getElementById("lockInput");
+  var lockError = document.getElementById("lockError");
+
+  if (sessionStorage.getItem(SESSION_KEY) === "1") {
+    lockScreen.remove();
+  }
+
+  lockForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (lockInput.value === PASS) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      lockScreen.remove();
+    } else {
+      lockError.style.display = "block";
+      lockInput.value = "";
+      lockInput.focus();
+    }
+  });
+})();
+</script>
+
 <header>
   <div class="inner">
     <span class="eyebrow">전국금속노동조합 현대중공업지부</span>
