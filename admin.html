@@ -347,6 +347,18 @@
     <div class="log" id="manageLog"></div>
   </div>
 
+  <div class="card">
+    <h2>4. 홈 화면 박스(카테고리) 관리</h2>
+    <p class="desc">메인 화면에 뜨는 박스 종류와 순서를 바꿀 수 있습니다.</p>
+    <button class="primary" id="loadCatsBtn" style="background:var(--navy);margin-top:0;">카테고리 불러오기</button>
+    <div id="catManageList" style="margin-top:14px;"></div>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <input type="text" id="newCatInput" placeholder="새 카테고리 이름" style="flex:1;">
+      <button class="manage-btn" id="addCatBtn" type="button" style="flex-shrink:0;">추가</button>
+    </div>
+    <div class="log" id="catLog"></div>
+  </div>
+
 </main>
 
 <script>
@@ -372,7 +384,12 @@
     successBox: document.getElementById("successBox"),
     loadListBtn: document.getElementById("loadListBtn"),
     manageList: document.getElementById("manageList"),
-    manageLog: document.getElementById("manageLog")
+    manageLog: document.getElementById("manageLog"),
+    loadCatsBtn: document.getElementById("loadCatsBtn"),
+    catManageList: document.getElementById("catManageList"),
+    catLog: document.getElementById("catLog"),
+    newCatInput: document.getElementById("newCatInput"),
+    addCatBtn: document.getElementById("addCatBtn")
   };
 
   var selectedFiles = [];
@@ -766,6 +783,118 @@
       renderManageList(result.data);
     }).catch(function (err) {
       mlog("오류: " + err.message, "err");
+    });
+  });
+
+  // ---------- 4. 카테고리(홈 화면 박스) 관리 ----------
+  function clog(msg, cls) {
+    els.catLog.classList.add("show");
+    var line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    els.catLog.appendChild(line);
+  }
+
+  function saveCategories(list) {
+    var owner = els.owner.value.trim(), repo = els.repo.value.trim(), token = els.token.value.trim();
+    return getFile(owner, repo, token, "data/categories.json").then(function (result) {
+      var newContent = utf8ToBase64(JSON.stringify(list, null, 2));
+      return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/data/categories.json", {
+        method: "PUT",
+        headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(token)),
+        body: JSON.stringify({ message: "카테고리 목록 갱신", content: newContent, sha: result.sha, branch: "main" })
+      });
+    }).then(function (res) {
+      if (!res.ok) return res.json().then(function (err) { throw new Error(err.message || res.status); });
+    });
+  }
+
+  function renderCatList(list) {
+    els.catManageList.innerHTML = "";
+    list.forEach(function (cat, i) {
+      var row = document.createElement("div");
+      row.className = "manage-row";
+
+      var info = document.createElement("div");
+      info.className = "manage-row-info";
+      info.innerHTML = "<span class='t'>" + (i + 1) + ". " + cat + "</span>";
+
+      var actions = document.createElement("div");
+      actions.className = "manage-row-actions";
+
+      var upBtn = document.createElement("button");
+      upBtn.type = "button"; upBtn.className = "manage-btn"; upBtn.textContent = "↑";
+      upBtn.disabled = i === 0;
+      upBtn.addEventListener("click", function () {
+        var newList = list.slice();
+        var tmp = newList[i - 1]; newList[i - 1] = newList[i]; newList[i] = tmp;
+        clog("저장 중...");
+        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); })
+          .catch(function (err) { clog("오류: " + err.message, "err"); });
+      });
+
+      var downBtn = document.createElement("button");
+      downBtn.type = "button"; downBtn.className = "manage-btn"; downBtn.textContent = "↓";
+      downBtn.disabled = i === list.length - 1;
+      downBtn.addEventListener("click", function () {
+        var newList = list.slice();
+        var tmp = newList[i + 1]; newList[i + 1] = newList[i]; newList[i] = tmp;
+        clog("저장 중...");
+        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); })
+          .catch(function (err) { clog("오류: " + err.message, "err"); });
+      });
+
+      var delBtn = document.createElement("button");
+      delBtn.type = "button"; delBtn.className = "manage-btn danger"; delBtn.textContent = "삭제";
+      delBtn.addEventListener("click", function () {
+        if (!confirm("'" + cat + "' 박스를 삭제할까요? 이미 그 카테고리로 올려둔 글은 삭제되지 않고, 목록엔 계속 남아있습니다(박스 순서 목록에서만 빠짐).")) return;
+        var newList = list.filter(function (c) { return c !== cat; });
+        clog("저장 중...");
+        saveCategories(newList).then(function () { clog("완료!", "ok"); renderCatList(newList); })
+          .catch(function (err) { clog("오류: " + err.message, "err"); });
+      });
+
+      actions.appendChild(upBtn);
+      actions.appendChild(downBtn);
+      actions.appendChild(delBtn);
+      row.appendChild(info);
+      row.appendChild(actions);
+      els.catManageList.appendChild(row);
+    });
+  }
+
+  els.loadCatsBtn.addEventListener("click", function () {
+    var owner = els.owner.value.trim(), repo = els.repo.value.trim(), token = els.token.value.trim();
+    if (!owner || !repo || !token) { clog("연결 설정(저장소, 토큰)을 먼저 입력해주세요.", "err"); return; }
+    els.catLog.innerHTML = "";
+    els.catLog.classList.remove("show");
+    clog("불러오는 중...");
+    getFile(owner, repo, token, "data/categories.json").then(function (result) {
+      els.catLog.innerHTML = "";
+      els.catLog.classList.remove("show");
+      renderCatList(result.data);
+    }).catch(function (err) {
+      clog("오류: " + err.message, "err");
+    });
+  });
+
+  els.addCatBtn.addEventListener("click", function () {
+    var owner = els.owner.value.trim(), repo = els.repo.value.trim(), token = els.token.value.trim();
+    var name = els.newCatInput.value.trim();
+    if (!owner || !repo || !token) { clog("연결 설정(저장소, 토큰)을 먼저 입력해주세요.", "err"); return; }
+    if (!name) { clog("추가할 카테고리 이름을 입력해주세요.", "err"); return; }
+    clog("추가 중...");
+    getFile(owner, repo, token, "data/categories.json").then(function (result) {
+      var list = result.data;
+      if (list.indexOf(name) >= 0) { clog("이미 있는 카테고리입니다.", "err"); return; }
+      list.push(name);
+      return saveCategories(list).then(function () {
+        clog("완료!", "ok");
+        els.newCatInput.value = "";
+        renderCatList(list);
+      });
+    }).catch(function (err) {
+      clog("오류: " + err.message, "err");
     });
   });
 })();
