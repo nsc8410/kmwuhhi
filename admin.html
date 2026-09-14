@@ -189,6 +189,30 @@
     margin-top: 10px;
   }
   .remember-row input { width: auto; margin-top: 3px; }
+
+  .manage-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .manage-row:last-child { border-bottom: none; }
+  .manage-row-info { min-width: 0; }
+  .manage-row-info .t { font-weight: 700; font-size: 0.9rem; }
+  .manage-row-info .m { font-size: 0.78rem; color: var(--steel); margin-top: 2px; }
+  .manage-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .manage-btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 6px 10px;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .manage-btn.danger { color: var(--err); border-color: var(--err); }
 </style>
 </head>
 <body>
@@ -315,6 +339,14 @@
     <div class="success-box" id="successBox"></div>
   </div>
 
+  <div class="card">
+    <h2>3. 기존 글 관리</h2>
+    <p class="desc">올린 글의 제목/날짜/카테고리를 고치거나, 잘못 올린 글을 지울 수 있습니다.</p>
+    <button class="primary" id="loadListBtn" style="background:var(--navy);margin-top:0;">목록 불러오기</button>
+    <div id="manageList" style="margin-top:14px;"></div>
+    <div class="log" id="manageLog"></div>
+  </div>
+
 </main>
 
 <script>
@@ -337,10 +369,14 @@
     remember: document.getElementById("rememberToken"),
     submitBtn: document.getElementById("submitBtn"),
     log: document.getElementById("log"),
-    successBox: document.getElementById("successBox")
+    successBox: document.getElementById("successBox"),
+    loadListBtn: document.getElementById("loadListBtn"),
+    manageList: document.getElementById("manageList"),
+    manageLog: document.getElementById("manageLog")
   };
 
   var selectedFiles = [];
+  var editingOriginal = null; // 수정 중인 원본 항목(참조 비교용)
 
   // ---------- 토큰 저장/불러오기 (체크했을 때만) ----------
   var STORAGE_KEY = "hhiunAdminToken";
@@ -510,17 +546,25 @@
 
   // 목록 파일을 갱신하다가 다른 요청과 타이밍이 겹쳐 실패하면(버전 충돌),
   // 최신 버전을 다시 받아와 자동으로 최대 4번까지 재시도합니다.
-  function updatePublicationsList(owner, repo, token, entry, label, attempt) {
+  function updatePublicationsList(owner, repo, token, entry, label, attempt, replaceTarget) {
     attempt = attempt || 1;
     return getFile(owner, repo, token, "data/publications.json").then(function (result) {
       var list = result.data;
-      list.unshift(entry);
+      if (replaceTarget) {
+        var idx = list.findIndex(function (d) {
+          return d.category === replaceTarget.category && d.no === replaceTarget.no && d.title === replaceTarget.title;
+        });
+        if (idx >= 0) list[idx] = entry;
+        else list.unshift(entry); // 원본을 못 찾으면 안전하게 새 항목으로 추가
+      } else {
+        list.unshift(entry);
+      }
       var newContent = utf8ToBase64(JSON.stringify(list, null, 2));
       return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/data/publications.json", {
         method: "PUT",
         headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(token)),
         body: JSON.stringify({
-          message: "간행물 추가: " + label,
+          message: (replaceTarget ? "간행물 수정: " : "간행물 추가: ") + label,
           content: newContent,
           sha: result.sha,
           branch: "main"
@@ -533,7 +577,7 @@
           if (isConflict && attempt < 4) {
             log("목록 파일 버전이 살짝 어긋나서 다시 시도합니다... (" + attempt + "/4)");
             return new Promise(function (resolve) { setTimeout(resolve, 600 * attempt); })
-              .then(function () { return updatePublicationsList(owner, repo, token, entry, label, attempt + 1); });
+              .then(function () { return updatePublicationsList(owner, repo, token, entry, label, attempt + 1, replaceTarget); });
           }
           throw new Error("목록 갱신 실패: " + msg);
         });
@@ -560,45 +604,54 @@
     if (!category) { log("카테고리를 입력해주세요.", "err"); return; }
     if (!title) { log("제목을 입력해주세요.", "err"); return; }
     if (!no && no !== 0) { log("호수(No.)를 입력해주세요.", "err"); return; }
-    if (selectedFiles.length === 0) { log("사진을 최소 1장 올려주세요.", "err"); return; }
+    if (!editingOriginal && selectedFiles.length === 0) { log("사진을 최소 1장 올려주세요.", "err"); return; }
 
     els.submitBtn.disabled = true;
-    els.submitBtn.textContent = "올리는 중...";
+    els.submitBtn.textContent = editingOriginal ? "저장하는 중..." : "올리는 중...";
 
     var folderSlug = String(no);
-    var uploadedPaths = [];
+    var uploadedPaths = editingOriginal ? (editingOriginal.pages || []) : [];
 
     var chain = Promise.resolve();
-    selectedFiles.forEach(function (file, i) {
-      chain = chain.then(function () {
-        log("사진 " + (i + 1) + "/" + selectedFiles.length + " 업로드 중...");
-        return fileToBase64(file).then(function (b64) {
-          var path = "publications/" + folderSlug + "/" + (i + 1) + "." + extOf(file.name);
-          return putFile(owner, repo, token, path, b64, "간행물 " + no + "호 이미지 추가").then(function () {
-            uploadedPaths.push(path);
-            log("사진 " + (i + 1) + " 완료", "ok");
+    if (selectedFiles.length > 0) {
+      uploadedPaths = []; // 새 사진을 올리면 기존 사진 목록을 새 것으로 교체
+      selectedFiles.forEach(function (file, i) {
+        chain = chain.then(function () {
+          log("사진 " + (i + 1) + "/" + selectedFiles.length + " 업로드 중...");
+          return fileToBase64(file).then(function (b64) {
+            var path = "publications/" + folderSlug + "/" + (i + 1) + "." + extOf(file.name);
+            return putFile(owner, repo, token, path, b64, "간행물 " + no + "호 이미지 추가").then(function () {
+              uploadedPaths.push(path);
+              log("사진 " + (i + 1) + " 완료", "ok");
+            });
           });
         });
       });
-    });
+    }
+
+    var entry = {
+      no: no,
+      category: category,
+      title: title,
+      date: date || "",
+      summary: summary || "",
+      pages: uploadedPaths
+    };
 
     chain
       .then(function () {
         log("목록 파일(publications.json) 갱신 중...");
-        return updatePublicationsList(owner, repo, token, {
-          no: no,
-          category: category,
-          title: title,
-          date: date || "",
-          summary: summary || "",
-          pages: uploadedPaths
-        }, title);
+        if (editingOriginal) {
+          return updatePublicationsList(owner, repo, token, entry, title, 1, editingOriginal);
+        }
+        return updatePublicationsList(owner, repo, token, entry, title);
       })
       .then(function () {
         log("완료!", "ok");
-        els.successBox.innerHTML = "업로드가 완료됐습니다. 1~2분 후 사이트에서 확인하세요.<br>" +
+        els.successBox.innerHTML = (editingOriginal ? "수정이 완료됐습니다." : "업로드가 완료됐습니다.") + " 1~2분 후 사이트에서 확인하세요.<br>" +
           "<a href='https://" + owner + ".github.io/" + repo + "/' target='_blank'>사이트 열기 →</a>";
         els.successBox.classList.add("show");
+        editingOriginal = null;
         selectedFiles = [];
         renderThumbs();
         els.title.value = "";
@@ -613,6 +666,107 @@
         els.submitBtn.disabled = false;
         els.submitBtn.textContent = "사이트에 올리기";
       });
+  });
+
+  // ---------- 3. 기존 글 관리 (목록/수정/삭제) ----------
+  function mlog(msg, cls) {
+    els.manageLog.classList.add("show");
+    var line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    els.manageLog.appendChild(line);
+  }
+
+  function renderManageList(list) {
+    els.manageList.innerHTML = "";
+    list
+      .slice()
+      .sort(function (a, b) { return (b.date || "").localeCompare(a.date || "") || (b.no - a.no); })
+      .forEach(function (item) {
+        var row = document.createElement("div");
+        row.className = "manage-row";
+
+        var info = document.createElement("div");
+        info.className = "manage-row-info";
+        var t = document.createElement("div");
+        t.className = "t";
+        t.textContent = item.title;
+        var m = document.createElement("div");
+        m.className = "m";
+        m.textContent = item.category + " · No." + item.no + (item.date ? " · " + item.date : "");
+        info.appendChild(t);
+        info.appendChild(m);
+
+        var actions = document.createElement("div");
+        actions.className = "manage-row-actions";
+
+        var editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "manage-btn";
+        editBtn.textContent = "수정";
+        editBtn.addEventListener("click", function () {
+          editingOriginal = item;
+          els.category.value = ["민주항해", "쟁대위", "교섭속보", "소식지"].indexOf(item.category) >= 0 ? item.category : "__custom__";
+          els.categoryCustom.style.display = els.category.value === "__custom__" ? "block" : "none";
+          els.categoryCustom.value = els.category.value === "__custom__" ? item.category : "";
+          els.title.value = item.title;
+          els.no.value = item.no;
+          els.date.value = item.date || "";
+          els.summary.value = item.summary || "";
+          els.submitBtn.textContent = "수정 내용 저장";
+          window.scrollTo({ top: els.category.getBoundingClientRect().top + window.scrollY - 20, behavior: "smooth" });
+          mlog("'" + item.title + "' 항목을 수정 중입니다. 위 폼을 고친 뒤 '수정 내용 저장'을 누르세요. (사진은 새로 올리지 않으면 그대로 유지됩니다)");
+        });
+
+        var delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "manage-btn danger";
+        delBtn.textContent = "삭제";
+        delBtn.addEventListener("click", function () {
+          if (!confirm("'" + item.title + "' 항목을 정말 삭제할까요? 목록에서만 지워지고, 이미 올린 사진 파일은 저장소에 그대로 남습니다.")) return;
+          var owner = els.owner.value.trim(), repo = els.repo.value.trim(), token = els.token.value.trim();
+          if (!token) { mlog("먼저 토큰을 입력해주세요.", "err"); return; }
+          mlog("삭제 중...");
+          getFile(owner, repo, token, "data/publications.json").then(function (result) {
+            var list2 = result.data.filter(function (d) {
+              return !(d.category === item.category && d.no === item.no && d.title === item.title);
+            });
+            var newContent = utf8ToBase64(JSON.stringify(list2, null, 2));
+            return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/data/publications.json", {
+              method: "PUT",
+              headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(token)),
+              body: JSON.stringify({ message: "간행물 삭제: " + item.title, content: newContent, sha: result.sha, branch: "main" })
+            });
+          }).then(function (res) {
+            if (!res.ok) return res.json().then(function (err) { throw new Error(err.message || res.status); });
+            mlog("삭제 완료!", "ok");
+            row.remove();
+          }).catch(function (err) {
+            mlog("오류: " + err.message, "err");
+          });
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        row.appendChild(info);
+        row.appendChild(actions);
+        els.manageList.appendChild(row);
+      });
+  }
+
+  els.loadListBtn.addEventListener("click", function () {
+    var owner = els.owner.value.trim(), repo = els.repo.value.trim(), token = els.token.value.trim();
+    if (!owner || !repo || !token) { mlog("연결 설정(저장소, 토큰)을 먼저 입력해주세요.", "err"); return; }
+    els.manageLog.innerHTML = "";
+    els.manageLog.classList.remove("show");
+    mlog("불러오는 중...");
+    getFile(owner, repo, token, "data/publications.json").then(function (result) {
+      els.manageLog.innerHTML = "";
+      els.manageLog.classList.remove("show");
+      renderManageList(result.data);
+    }).catch(function (err) {
+      mlog("오류: " + err.message, "err");
+    });
   });
 })();
 </script>
