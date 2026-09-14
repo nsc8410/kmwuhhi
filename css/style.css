@@ -111,206 +111,142 @@ body {
   font-size: 0.88rem;
 }
 
-/* ---------- Board tabs (official GNB style) ---------- */
-
-.board-tabs {
-  background: var(--navy);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-  max-width: var(--max-w);
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.board-tabs button {
-  background: var(--navy-2);
-  border: 1px solid var(--line-dark);
-  border-top: 4px solid var(--safety-dim);
-  color: var(--paper);
-  font-family: inherit;
-  font-size: 1.05rem;
-  font-weight: 900;
-  padding: 20px 14px;
-  cursor: pointer;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.board-tabs button .tab-count {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: #9AA7AE;
-}
-
-.board-tabs button[aria-selected="true"] {
-  background: var(--safety);
-  border-top-color: var(--safety);
-  border-color: var(--safety);
-  color: #fff;
-}
-.board-tabs button[aria-selected="true"] .tab-count { color: rgba(255,255,255,0.85); }
-
-@media (max-width: 560px) {
-  .board-tabs { grid-template-columns: 1fr 1fr; }
-}
-
 /* ---------- Toolbar ---------- */
 
 .board-toolbar {
-  background: #fff;
-  border-bottom: 1px solid var(--line);
+  background: var(--navy);
+  border-bottom: 3px solid var(--safety);
 }
 
 .board-toolbar-inner {
   max-width: var(--max-w);
   margin: 0 auto;
-  padding: 14px 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
+  padding: 18px 20px;
 }
-
-.search-field { flex: 1 1 220px; }
 
 .search-field input {
   width: 100%;
-  padding: 10px 13px;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--ink);
+  padding: 11px 14px;
+  border: 1px solid var(--line-dark);
+  background: var(--navy-2);
+  color: var(--paper);
   border-radius: 3px;
   font-family: inherit;
   font-size: 0.93rem;
 }
 
-.search-field input::placeholder { color: var(--steel); }
+.search-field input::placeholder { color: #7C8A93; }
 
 .search-field input:focus {
   outline: 2px solid var(--safety);
   outline-offset: 1px;
 }
 
-.year-filters {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
+/* ---------- Category panels (큰 박스 안에 목록) ---------- */
 
-.year-filters[hidden] { display: none; }
+.panels { padding: 24px 20px 48px; }
 
-.year-filters button {
-  padding: 7px 12px;
-  border-radius: 3px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: var(--steel);
-  font-family: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.year-filters button[aria-pressed="true"] {
-  background: var(--navy);
-  border-color: var(--navy);
-  color: var(--paper);
-  font-weight: 700;
-}
-
-/* ---------- Board (official bulletin table) ---------- */
-
-.board { padding: 0 20px 48px; }
-
-.board-inner {
+.panels-inner {
   max-width: var(--max-w);
   margin: 0 auto;
-}
-
-.board-head-row {
   display: grid;
-  grid-template-columns: 70px 1fr 110px;
-  gap: 16px;
-  padding: 12px 4px;
-  border-top: 3px solid var(--navy);
-  border-bottom: 1px solid var(--line);
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--steel);
-}
-.board-head-row .col-title { text-align: left; }
-.board-head-row .col-date { text-align: right; }
-
-.board-list { }
-
-.board-row {
-  display: grid;
-  grid-template-columns: 70px 1fr 110px;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
   align-items: start;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--safety-dim);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.panel-head {
   width: 100%;
-  padding: 18px 4px;
+  background: var(--navy);
+  border: none;
+  padding: 16px 18px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.panel-head::after {
+  content: "+";
+  color: var(--safety);
+  font-size: 1.2rem;
+  font-weight: 900;
+  margin-left: 8px;
+}
+
+.panel-open .panel-head::after { content: "−"; }
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--paper);
+}
+
+.panel-count {
+  font-size: 0.78rem;
+  color: #9AA7AE;
+  margin-right: auto;
+  margin-left: 10px;
+}
+
+.panel-list {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.panel-row {
+  display: block;
+  width: 100%;
+  padding: 14px 18px;
   border: none;
   border-bottom: 1px solid var(--line);
   background: transparent;
-  text-decoration: none;
-  color: inherit;
-  font-family: inherit;
   text-align: left;
   cursor: pointer;
+  font-family: inherit;
 }
 
-.board-row:hover { background: rgba(232, 89, 12, 0.05); }
+.panel-row:last-child { border-bottom: none; }
+.panel-row:hover { background: rgba(232, 89, 12, 0.06); }
 
-.row-no {
-  font-weight: 900;
+.panel-row-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.75rem;
+  color: var(--steel);
+  margin-bottom: 4px;
+}
+
+.panel-row h3 {
+  margin: 0 0 3px;
   font-size: 0.95rem;
-  color: var(--safety-dim);
-  padding-top: 1px;
-}
-
-.row-body h3 {
-  margin: 0 0 5px;
-  font-size: 1.02rem;
   font-weight: 700;
+  color: var(--ink);
   line-height: 1.4;
 }
 
-.row-tags {
-  display: inline-flex;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.row-tag {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--navy);
-  background: var(--line);
-  padding: 2px 7px;
-  border-radius: 2px;
-}
-
-.row-summary {
+.panel-row p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #4A4A4A;
 }
 
-.row-meta-mobile {
-  display: none;
-  font-size: 0.78rem;
+.panel-empty {
+  padding: 28px 18px;
   color: var(--steel);
-  margin-top: 6px;
-}
-
-.row-date {
-  text-align: right;
-  font-size: 0.85rem;
-  color: var(--steel);
-  padding-top: 2px;
-  white-space: nowrap;
+  font-size: 0.88rem;
+  text-align: center;
 }
 
 .empty-state {
@@ -319,14 +255,6 @@ body {
   text-align: center;
 }
 
-@media (max-width: 560px) {
-  .board-head-row { display: none; }
-  .board-row {
-    grid-template-columns: 44px 1fr;
-  }
-  .row-date { display: none; }
-  .row-meta-mobile { display: block; }
-}
 
 /* ---------- Install banner ---------- */
 
