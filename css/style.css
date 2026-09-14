@@ -61,6 +61,21 @@ body {
   margin: 0 auto;
 }
 
+.header-links {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.admin-link-accent {
+  color: var(--safety);
+  border-color: var(--safety);
+}
+.admin-link-accent:hover {
+  color: #fff;
+  background: var(--safety);
+}
+
 .brand-eyebrow {
   display: block;
   font-size: 1.35rem;
