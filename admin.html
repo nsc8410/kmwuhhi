@@ -472,6 +472,39 @@
     return btoa(unescape(encodeURIComponent(str)));
   }
 
+  // 목록 파일을 갱신하다가 다른 요청과 타이밍이 겹쳐 실패하면(버전 충돌),
+  // 최신 버전을 다시 받아와 자동으로 최대 4번까지 재시도합니다.
+  function updatePublicationsList(owner, repo, token, entry, label, attempt) {
+    attempt = attempt || 1;
+    return getFile(owner, repo, token, "data/publications.json").then(function (result) {
+      var list = result.data;
+      list.unshift(entry);
+      var newContent = utf8ToBase64(JSON.stringify(list, null, 2));
+      return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/data/publications.json", {
+        method: "PUT",
+        headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(token)),
+        body: JSON.stringify({
+          message: "간행물 추가: " + label,
+          content: newContent,
+          sha: result.sha,
+          branch: "main"
+        })
+      }).then(function (res) {
+        if (res.ok) return;
+        return res.json().then(function (err) {
+          var msg = err.message || String(res.status);
+          var isConflict = res.status === 409 || /does not match|sha/i.test(msg);
+          if (isConflict && attempt < 4) {
+            log("목록 파일 버전이 살짝 어긋나서 다시 시도합니다... (" + attempt + "/4)");
+            return new Promise(function (resolve) { setTimeout(resolve, 600 * attempt); })
+              .then(function () { return updatePublicationsList(owner, repo, token, entry, label, attempt + 1); });
+          }
+          throw new Error("목록 갱신 실패: " + msg);
+        });
+      });
+    });
+  }
+
   // ---------- 제출 ----------
   els.submitBtn.addEventListener("click", function () {
     els.log.innerHTML = "";
@@ -516,32 +549,14 @@
     chain
       .then(function () {
         log("목록 파일(publications.json) 갱신 중...");
-        return getFile(owner, repo, token, "data/publications.json");
-      })
-      .then(function (result) {
-        var list = result.data;
-        var entry = {
+        return updatePublicationsList(owner, repo, token, {
           no: no,
           category: category,
           title: title,
           date: date || "",
           summary: summary || "",
           pages: uploadedPaths
-        };
-        list.unshift(entry);
-        var newContent = utf8ToBase64(JSON.stringify(list, null, 2));
-        return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/contents/data/publications.json", {
-          method: "PUT",
-          headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(token)),
-          body: JSON.stringify({
-            message: "간행물 추가: " + title,
-            content: newContent,
-            sha: result.sha,
-            branch: "main"
-          })
-        }).then(function (res) {
-          if (!res.ok) return res.json().then(function (err) { throw new Error("목록 갱신 실패: " + (err.message || res.status)); });
-        });
+        }, title);
       })
       .then(function () {
         log("완료!", "ok");
