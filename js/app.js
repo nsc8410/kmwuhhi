@@ -1,13 +1,7 @@
 (function () {
   "use strict";
 
-  var homeView = document.getElementById("homeView");
-  var listView = document.getElementById("listView");
-  var catCardsEl = document.getElementById("catCards");
-  var homeSearchInput = document.getElementById("homeSearchInput");
-  var backBtn = document.getElementById("backBtn");
-  var listHeadingEl = document.getElementById("listHeading");
-
+  var tabsEl = document.getElementById("boardTabs");
   var pubListEl = document.getElementById("pubList");
   var emptyStateEl = document.getElementById("emptyState");
   var searchInput = document.getElementById("searchInput");
@@ -17,6 +11,8 @@
   var activeCategory = "전체";
   var activeYear = "전체";
   var searchTerm = "";
+
+  var CATEGORY_ORDER = ["민주항해", "쟁대위", "교섭속보"];
 
   function formatDate(iso) {
     var d = new Date(iso + "T00:00:00");
@@ -37,40 +33,7 @@
     return "연도 미상";
   }
 
-  // ---------- 화면 전환 (홈 카드 ↔ 목록) ----------
-  function showHomeView() {
-    activeCategory = "전체";
-    activeYear = "전체";
-    searchTerm = "";
-    homeSearchInput.value = "";
-    buildCategoryCards();
-    listView.hidden = true;
-    homeView.hidden = false;
-  }
-
-  function showListView(cat, presetSearch) {
-    activeCategory = cat;
-    activeYear = "전체";
-    searchTerm = presetSearch || "";
-    searchInput.value = searchTerm;
-    listHeadingEl.textContent = cat === "전체" ? "전체 간행물" : cat;
-    homeView.hidden = true;
-    listView.hidden = false;
-    buildYearFilters();
-    render();
-  }
-
-  backBtn.addEventListener("click", showHomeView);
-
-  homeSearchInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" && homeSearchInput.value.trim()) {
-      showListView("전체", homeSearchInput.value.trim());
-    }
-  });
-
-  var CATEGORY_ORDER = ["민주항해", "쟁대위", "교섭속보"];
-
-  function buildCategoryCards() {
+  function buildTabs() {
     var cats = Array.from(new Set(allPubs.map(function (p) { return p.category; })));
     cats.sort(function (a, b) {
       var ia = CATEGORY_ORDER.indexOf(a);
@@ -79,23 +42,25 @@
       if (ib === -1) ib = CATEGORY_ORDER.length;
       return ia - ib;
     });
-    catCardsEl.innerHTML = "";
+    var options = ["전체"].concat(cats);
 
-    var allCard = document.createElement("button");
-    allCard.type = "button";
-    allCard.className = "cat-card cat-card-all";
-    allCard.innerHTML = '<span class="cat-card-name">전체 보기</span><span class="cat-card-count">' + allPubs.length + '건</span>';
-    allCard.addEventListener("click", function () { showListView("전체"); });
-    catCardsEl.appendChild(allCard);
-
-    cats.forEach(function (cat) {
-      var count = allPubs.filter(function (p) { return p.category === cat; }).length;
-      var card = document.createElement("button");
-      card.type = "button";
-      card.className = "cat-card";
-      card.innerHTML = '<span class="cat-card-name">' + cat + '</span><span class="cat-card-count">' + count + '건</span>';
-      card.addEventListener("click", function () { showListView(cat); });
-      catCardsEl.appendChild(card);
+    tabsEl.innerHTML = "";
+    options.forEach(function (cat) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", cat === activeCategory ? "true" : "false");
+      btn.textContent = cat;
+      btn.addEventListener("click", function () {
+        activeCategory = cat;
+        activeYear = "전체";
+        Array.from(tabsEl.children).forEach(function (b) {
+          b.setAttribute("aria-selected", b === btn ? "true" : "false");
+        });
+        buildYearFilters();
+        render();
+      });
+      tabsEl.appendChild(btn);
     });
   }
 
@@ -125,46 +90,53 @@
         return b.no - a.no;
       })
       .forEach(function (p) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pub-item";
-        btn.addEventListener("click", function () { openViewer(p); });
+        var row = document.createElement("button");
+        row.type = "button";
+        row.className = "board-row";
+        row.addEventListener("click", function () { openViewer(p); });
 
         var no = document.createElement("div");
-        no.className = "pub-no";
+        no.className = "row-no";
         no.textContent = p.noLabel || p.no;
-        no.setAttribute("data-prefix", p.noLabel ? "" : "No.");
 
         var body = document.createElement("div");
-        body.className = "pub-body";
+        body.className = "row-body";
+
+        var tags = document.createElement("div");
+        tags.className = "row-tags";
+        var catTag = document.createElement("span");
+        catTag.className = "row-tag";
+        catTag.textContent = p.category;
+        tags.appendChild(catTag);
 
         var h3 = document.createElement("h3");
         h3.textContent = p.title;
 
-        var meta = document.createElement("p");
-        meta.className = "pub-meta";
-        var pageCount = getPageList(p).length;
-        var pageLabel = pageCount > 1 ? " · 전체 " + pageCount + "페이지" : "";
-        if (p.body) pageLabel = "";
-        meta.textContent = p.date ? (p.category + " · " + formatDate(p.date) + pageLabel) : (p.category + pageLabel);
-
         var summary = document.createElement("p");
-        summary.className = "pub-summary";
+        summary.className = "row-summary";
         summary.textContent = p.summary || "";
 
+        var pageCount = getPageList(p).length;
+        var pageLabel = pageCount > 1 && !p.body ? (" · 전체 " + pageCount + "페이지") : "";
+
+        var metaMobile = document.createElement("div");
+        metaMobile.className = "row-meta-mobile";
+        metaMobile.textContent = (p.date ? formatDate(p.date) : "") + pageLabel;
+
+        body.appendChild(tags);
         body.appendChild(h3);
-        body.appendChild(meta);
-        body.appendChild(summary);
+        if (p.summary) body.appendChild(summary);
+        body.appendChild(metaMobile);
 
-        var dl = document.createElement("span");
-        dl.className = "pub-dl";
-        dl.textContent = "보기";
+        var date = document.createElement("div");
+        date.className = "row-date";
+        date.textContent = p.date ? formatDate(p.date) : "-";
 
-        btn.appendChild(no);
-        btn.appendChild(body);
-        btn.appendChild(dl);
+        row.appendChild(no);
+        row.appendChild(body);
+        row.appendChild(date);
 
-        pubListEl.appendChild(btn);
+        pubListEl.appendChild(row);
       });
   }
 
@@ -221,7 +193,8 @@
     .then(function (res) { return res.json(); })
     .then(function (data) {
       allPubs = data;
-      showHomeView();
+      buildTabs();
+      render();
     })
     .catch(function (err) {
       pubListEl.innerHTML = "<p class='empty-state'>간행물 목록을 불러오지 못했습니다.</p>";
@@ -384,7 +357,17 @@
   var deferredPrompt = null;
   var installBanner = document.getElementById("installBanner");
   var installBtn = document.getElementById("installBtn");
+  var installText = document.getElementById("installText");
 
+  function isStandalone() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+
+  function isIos() {
+    return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  }
+
+  // 안드로이드/크롬: 브라우저가 자동으로 설치 가능 신호를 주면 배너 표시
   window.addEventListener("beforeinstallprompt", function (e) {
     e.preventDefault();
     deferredPrompt = e;
@@ -403,4 +386,11 @@
   window.addEventListener("appinstalled", function () {
     installBanner.hidden = true;
   });
+
+  // 아이폰(사파리)은 자동 설치 신호 자체를 지원하지 않으므로, 안내 문구로 대신 표시
+  if (isIos() && !isStandalone()) {
+    installText.innerHTML = "<strong>공유 버튼(⬆)</strong>을 누른 뒤 <strong>'홈 화면에 추가'</strong>를 선택하면 앱처럼 쓸 수 있습니다.";
+    installBtn.hidden = true;
+    installBanner.hidden = false;
+  }
 })();
