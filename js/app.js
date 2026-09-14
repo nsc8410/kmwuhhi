@@ -12,7 +12,8 @@
   var activeYear = "전체";
   var searchTerm = "";
 
-  var CATEGORY_ORDER = ["민주항해", "쟁대위", "교섭속보"];
+  var CATEGORY_ORDER = ["교섭속보", "지부쟁대위", "각종제도"];
+  var FIXED_CATEGORIES = ["교섭속보", "지부쟁대위", "각종제도"]; // 내용이 없어도 항상 탭으로 보여줄 카테고리
 
   function formatDate(iso) {
     var d = new Date(iso + "T00:00:00");
@@ -34,7 +35,7 @@
   }
 
   function buildTabs() {
-    var cats = Array.from(new Set(allPubs.map(function (p) { return p.category; })));
+    var cats = Array.from(new Set(FIXED_CATEGORIES.concat(allPubs.map(function (p) { return p.category; }))));
     cats.sort(function (a, b) {
       var ia = CATEGORY_ORDER.indexOf(a);
       var ib = CATEGORY_ORDER.indexOf(b);
