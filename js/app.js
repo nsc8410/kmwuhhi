@@ -1,19 +1,16 @@
 (function () {
   "use strict";
 
-  var tabsEl = document.getElementById("boardTabs");
-  var pubListEl = document.getElementById("pubList");
+  var panelsWrapEl = document.getElementById("panelsWrap");
   var emptyStateEl = document.getElementById("emptyState");
   var searchInput = document.getElementById("searchInput");
-  var yearFiltersEl = document.getElementById("yearFilters");
 
   var allPubs = [];
-  var activeCategory = "전체";
-  var activeYear = "전체";
   var searchTerm = "";
+  var expandedCategory = null;
 
   var CATEGORY_ORDER = ["교섭속보", "지부쟁대위", "각종제도"];
-  var FIXED_CATEGORIES = ["교섭속보", "지부쟁대위", "각종제도"]; // 내용이 없어도 항상 탭으로 보여줄 카테고리
+  var FIXED_CATEGORIES = ["교섭속보", "지부쟁대위", "각종제도"]; // 내용이 없어도 항상 박스로 보여줄 카테고리
 
   function formatDate(iso) {
     var d = new Date(iso + "T00:00:00");
@@ -28,13 +25,59 @@
     return [];
   }
 
-  // 날짜가 없는 게시물은 "연도 미상"으로 분류
-  function getYear(pub) {
-    if (pub.date && /^\d{4}/.test(pub.date)) return pub.date.slice(0, 4);
-    return "연도 미상";
+  function sortPubs(list) {
+    return list.slice().sort(function (a, b) {
+      // 날짜가 있는 항목을 우선 최신순으로, 날짜 없는 옛 자료는 그 아래에서 호수순
+      var da = a.date || "";
+      var db = b.date || "";
+      if (da !== db) return db.localeCompare(da);
+      return b.no - a.no;
+    });
   }
 
-  function buildTabs() {
+  function buildRow(p) {
+    var row = document.createElement("button");
+    row.type = "button";
+    row.className = "panel-row";
+    row.addEventListener("click", function () { openViewer(p); });
+
+    var top = document.createElement("div");
+    top.className = "panel-row-top";
+    var noSpan = document.createElement("span");
+    noSpan.textContent = p.noLabel ? p.noLabel : ("No." + p.no);
+    var dateSpan = document.createElement("span");
+    dateSpan.textContent = p.date ? formatDate(p.date) : "";
+    top.appendChild(noSpan);
+    top.appendChild(dateSpan);
+
+    var h3 = document.createElement("h3");
+    h3.textContent = p.title;
+
+    row.appendChild(top);
+    row.appendChild(h3);
+
+    if (p.summary) {
+      var summary = document.createElement("p");
+      summary.textContent = p.summary;
+      row.appendChild(summary);
+    }
+
+    return row;
+  }
+
+  function render() {
+    var term = searchTerm.toLowerCase();
+    var matches = allPubs.filter(function (p) {
+      return !term || (p.title + " " + (p.summary || "")).toLowerCase().indexOf(term) !== -1;
+    });
+
+    if (term && matches.length === 0) {
+      panelsWrapEl.innerHTML = "";
+      emptyStateEl.hidden = false;
+      return;
+    }
+    emptyStateEl.hidden = true;
+
     var cats = Array.from(new Set(FIXED_CATEGORIES.concat(allPubs.map(function (p) { return p.category; }))));
     cats.sort(function (a, b) {
       var ia = CATEGORY_ORDER.indexOf(a);
@@ -43,146 +86,50 @@
       if (ib === -1) ib = CATEGORY_ORDER.length;
       return ia - ib;
     });
-    var options = ["전체"].concat(cats);
 
-    tabsEl.innerHTML = "";
-    options.forEach(function (cat) {
-      var count = cat === "전체" ? allPubs.length : allPubs.filter(function (p) { return p.category === cat; }).length;
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.setAttribute("role", "tab");
-      btn.setAttribute("aria-selected", cat === activeCategory ? "true" : "false");
-      btn.innerHTML = cat + '<span class="tab-count">' + count + '건</span>';
-      btn.addEventListener("click", function () {
-        activeCategory = cat;
-        activeYear = "전체";
-        Array.from(tabsEl.children).forEach(function (b) {
-          b.setAttribute("aria-selected", b === btn ? "true" : "false");
-        });
-        buildYearFilters();
+    panelsWrapEl.innerHTML = "";
+
+    cats.forEach(function (cat) {
+      var itemsInCat = sortPubs(matches.filter(function (p) { return p.category === cat; }));
+
+      var isOpen = term ? true : (expandedCategory === cat);
+      var panel = document.createElement("section");
+      panel.className = "panel" + (isOpen ? " panel-open" : "");
+
+      var head = document.createElement("button");
+      head.type = "button";
+      head.className = "panel-head";
+      var h2 = document.createElement("h2");
+      h2.textContent = cat;
+      var count = document.createElement("span");
+      count.className = "panel-count";
+      count.textContent = itemsInCat.length + "건";
+      head.appendChild(h2);
+      head.appendChild(count);
+      head.addEventListener("click", function () {
+        if (term) return; // 검색 중에는 전부 펼쳐진 상태 유지
+        expandedCategory = (expandedCategory === cat) ? null : cat;
         render();
       });
-      tabsEl.appendChild(btn);
-    });
-  }
+      panel.appendChild(head);
 
-  function render() {
-    var filtered = allPubs.filter(function (p) {
-      var matchesCat = activeCategory === "전체" || p.category === activeCategory;
-      var matchesYear = activeYear === "전체" || getYear(p) === activeYear;
-      var matchesSearch = !searchTerm || (p.title + " " + (p.summary || "")).toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
-      return matchesCat && matchesYear && matchesSearch;
-    });
+      if (isOpen) {
+        var list = document.createElement("div");
+        list.className = "panel-list";
 
-    pubListEl.innerHTML = "";
+        if (itemsInCat.length === 0) {
+          var empty = document.createElement("p");
+          empty.className = "panel-empty";
+          empty.textContent = term ? "검색 결과가 없습니다." : "아직 등록된 내용이 없습니다.";
+          list.appendChild(empty);
+        } else {
+          itemsInCat.forEach(function (p) { list.appendChild(buildRow(p)); });
+        }
 
-    if (filtered.length === 0) {
-      emptyStateEl.hidden = false;
-      return;
-    }
-    emptyStateEl.hidden = true;
+        panel.appendChild(list);
+      }
 
-    filtered
-      .slice()
-      .sort(function (a, b) {
-        // 날짜가 있는 항목을 우선 최신순으로, 날짜 없는 옛 자료는 그 아래에서 호수순
-        var da = a.date || "";
-        var db = b.date || "";
-        if (da !== db) return db.localeCompare(da);
-        return b.no - a.no;
-      })
-      .forEach(function (p) {
-        var row = document.createElement("button");
-        row.type = "button";
-        row.className = "board-row";
-        row.addEventListener("click", function () { openViewer(p); });
-
-        var no = document.createElement("div");
-        no.className = "row-no";
-        no.textContent = p.noLabel || p.no;
-
-        var body = document.createElement("div");
-        body.className = "row-body";
-
-        var tags = document.createElement("div");
-        tags.className = "row-tags";
-        var catTag = document.createElement("span");
-        catTag.className = "row-tag";
-        catTag.textContent = p.category;
-        tags.appendChild(catTag);
-
-        var h3 = document.createElement("h3");
-        h3.textContent = p.title;
-
-        var summary = document.createElement("p");
-        summary.className = "row-summary";
-        summary.textContent = p.summary || "";
-
-        var pageCount = getPageList(p).length;
-        var pageLabel = pageCount > 1 && !p.body ? (" · 전체 " + pageCount + "페이지") : "";
-
-        var metaMobile = document.createElement("div");
-        metaMobile.className = "row-meta-mobile";
-        metaMobile.textContent = (p.date ? formatDate(p.date) : "") + pageLabel;
-
-        body.appendChild(tags);
-        body.appendChild(h3);
-        if (p.summary) body.appendChild(summary);
-        body.appendChild(metaMobile);
-
-        var date = document.createElement("div");
-        date.className = "row-date";
-        date.textContent = p.date ? formatDate(p.date) : "-";
-
-        row.appendChild(no);
-        row.appendChild(body);
-        row.appendChild(date);
-
-        pubListEl.appendChild(row);
-      });
-  }
-
-  // 선택된 카테고리 안에 등장하는 연도들로 연도 버튼 목록을 만듦.
-  // "전체" 카테고리이거나 연도가 1종류뿐이면 연도 줄 자체를 숨김.
-  function buildYearFilters() {
-    yearFiltersEl.innerHTML = "";
-
-    if (activeCategory === "전체") {
-      yearFiltersEl.hidden = true;
-      return;
-    }
-
-    var itemsInCat = allPubs.filter(function (p) { return p.category === activeCategory; });
-    var years = Array.from(new Set(itemsInCat.map(getYear)));
-
-    if (years.length <= 1) {
-      yearFiltersEl.hidden = true;
-      return;
-    }
-
-    // 연도 미상은 맨 뒤로, 나머지는 최신순
-    years.sort(function (a, b) {
-      if (a === "연도 미상") return 1;
-      if (b === "연도 미상") return -1;
-      return b.localeCompare(a);
-    });
-
-    var options = ["전체"].concat(years);
-    yearFiltersEl.hidden = false;
-
-    options.forEach(function (year) {
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = year;
-      btn.setAttribute("aria-pressed", year === activeYear ? "true" : "false");
-      btn.addEventListener("click", function () {
-        activeYear = year;
-        Array.from(yearFiltersEl.children).forEach(function (b) {
-          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
-        });
-        render();
-      });
-      yearFiltersEl.appendChild(btn);
+      panelsWrapEl.appendChild(panel);
     });
   }
 
@@ -195,11 +142,10 @@
     .then(function (res) { return res.json(); })
     .then(function (data) {
       allPubs = data;
-      buildTabs();
       render();
     })
     .catch(function (err) {
-      pubListEl.innerHTML = "<p class='empty-state'>간행물 목록을 불러오지 못했습니다.</p>";
+      panelsWrapEl.innerHTML = "<p class='empty-state'>간행물 목록을 불러오지 못했습니다.</p>";
       console.error(err);
     });
 
