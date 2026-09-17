@@ -253,6 +253,43 @@ body {
   text-align: center;
 }
 
+/* ---------- 연도별 그룹 ("과거소식지" 전용) ---------- */
+
+.year-group {
+  border-bottom: 1px solid var(--line);
+}
+.year-group:last-child { border-bottom: none; }
+
+.year-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background: #F6F3EC;
+  border: none;
+  border-left: 3px solid var(--safety-dim);
+  padding: 12px 18px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: var(--navy);
+}
+
+.year-count {
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--steel);
+}
+
+.year-open > .year-head {
+  background: var(--navy);
+  color: var(--paper);
+}
+.year-open > .year-head .year-count { color: #9AA7AE; }
+
+.year-list .panel-row { padding-left: 30px; }
+
 .empty-state {
   padding: 48px 4px;
   color: var(--steel);
