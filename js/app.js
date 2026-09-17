@@ -9,7 +9,11 @@
   var searchTerm = "";
   var expandedCategory = null;
   var expandedYear = null;
-  var YEAR_GROUPED_CATEGORY = "과거소식지"; // 이 이름의 박스만 연도별로 묶어서 보여줌
+  var YEAR_GROUPED_CATEGORY = "과거소식지"; // 이 이름의 박스만 연도별로 묶어서 보여줌 (띄어쓰기는 무시하고 비교함)
+
+  function normalizeCatName(s) {
+    return (s || "").replace(/\s+/g, "");
+  }
 
   var CATEGORY_ORDER = ["교섭속보", "지부쟁대위", "각종제도"]; // data/categories.json을 못 읽어오면 이 기본값 사용
   var FIXED_CATEGORIES = CATEGORY_ORDER;
@@ -178,7 +182,7 @@
           empty.className = "panel-empty";
           empty.textContent = term ? "검색 결과가 없습니다." : "아직 등록된 내용이 없습니다.";
           list.appendChild(empty);
-        } else if (cat === YEAR_GROUPED_CATEGORY) {
+        } else if (normalizeCatName(cat) === normalizeCatName(YEAR_GROUPED_CATEGORY)) {
           list.appendChild(buildYearGroupedList(itemsInCat, term));
         } else {
           itemsInCat.forEach(function (p) { list.appendChild(buildRow(p)); });
