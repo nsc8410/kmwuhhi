@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
 <style>
   :root {
     --navy: #16222C;
@@ -484,40 +485,66 @@
     return ocrWorkerPromise;
   }
 
-  function maybeAutoFillDate() {
-    var statusEl = document.getElementById("dateAutoStatus");
-    if (els.date.value) return; // 이미 직접 입력했으면 건드리지 않음
-    var firstImage = selectedFiles.find(function (f) { return f.type.indexOf("image/") === 0; });
-    if (!firstImage) {
-      if (selectedFiles.some(function (f) { return f.type === "application/pdf"; })) {
-        statusEl.textContent = "PDF는 자동으로 날짜를 못 찾아요. 직접 입력해주세요.";
-      }
-      return;
-    }
-    if (typeof Tesseract === "undefined") {
-      statusEl.textContent = "자동 인식 기능을 불러오지 못했어요. 직접 입력해주세요.";
-      return;
-    }
+  // PDF 첫 페이지를 캔버스(이미지)로 그려서 반환
+  function renderPdfFirstPageToCanvas(pdfFile) {
+    if (typeof pdfjsLib === "undefined") return Promise.reject(new Error("pdf.js 로드 안 됨"));
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js";
+    return pdfFile.arrayBuffer()
+      .then(function (buf) { return pdfjsLib.getDocument({ data: buf }).promise; })
+      .then(function (pdf) { return pdf.getPage(1); })
+      .then(function (page) {
+        var viewport = page.getViewport({ scale: 2 });
+        var canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        return page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise.then(function () {
+          return canvas;
+        });
+      });
+  }
 
-    statusEl.textContent = "사진에서 날짜 찾는 중...";
+  function runOcrOn(imageSource, statusEl) {
     getOcrWorker()
-      .then(function (worker) { return worker.recognize(firstImage); })
+      .then(function (worker) { return worker.recognize(imageSource); })
       .then(function (result) {
         var text = result.data.text || "";
         var m = text.match(/(20\d{2})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/);
-        if (m && els.date) {
+        if (m && els.date && !els.date.value) {
           var yyyy = m[1], mm = m[2].padStart(2, "0"), dd = m[3].padStart(2, "0");
-          if (!els.date.value) {
-            els.date.value = yyyy + "-" + mm + "-" + dd;
-            statusEl.textContent = "사진에서 날짜를 자동으로 채웠어요. 맞는지 확인해주세요.";
-          }
+          els.date.value = yyyy + "-" + mm + "-" + dd;
+          statusEl.textContent = "자동으로 날짜를 채웠어요. 맞는지 확인해주세요.";
         } else {
-          statusEl.textContent = "사진에서 날짜를 못 찾았어요. 직접 입력해주세요.";
+          statusEl.textContent = "날짜를 못 찾았어요. 직접 입력해주세요.";
         }
       })
       .catch(function () {
         statusEl.textContent = "자동 인식에 실패했어요. 직접 입력해주세요.";
       });
+  }
+
+  function maybeAutoFillDate() {
+    var statusEl = document.getElementById("dateAutoStatus");
+    if (els.date.value) return; // 이미 직접 입력했으면 건드리지 않음
+
+    var firstImage = selectedFiles.find(function (f) { return f.type.indexOf("image/") === 0; });
+    var firstPdf = selectedFiles.find(function (f) { return f.type === "application/pdf"; });
+
+    if (typeof Tesseract === "undefined") {
+      statusEl.textContent = "자동 인식 기능을 불러오지 못했어요. 직접 입력해주세요.";
+      return;
+    }
+
+    if (firstImage) {
+      statusEl.textContent = "사진에서 날짜 찾는 중...";
+      runOcrOn(firstImage, statusEl);
+    } else if (firstPdf) {
+      statusEl.textContent = "PDF 첫 페이지에서 날짜 찾는 중...";
+      renderPdfFirstPageToCanvas(firstPdf)
+        .then(function (canvas) { runOcrOn(canvas, statusEl); })
+        .catch(function () {
+          statusEl.textContent = "PDF에서 날짜를 못 읽었어요. 직접 입력해주세요.";
+        });
+    }
   }
 
   function renderThumbs() {
