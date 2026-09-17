@@ -6,6 +6,7 @@
 <title>간행물 올리기 · 관리자 도구</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   :root {
     --navy: #16222C;
@@ -316,6 +317,7 @@
       <div>
         <label>발행일 <span class="hint">모르면 비워두세요</span></label>
         <input type="date" id="fDate">
+        <div id="dateAutoStatus" style="font-size:0.78rem; color:var(--steel); margin-top:4px;"></div>
       </div>
     </div>
 
@@ -471,6 +473,42 @@
       if (f.type.indexOf("image/") === 0 || f.type === "application/pdf") selectedFiles.push(f);
     });
     renderThumbs();
+    maybeAutoFillDate();
+  }
+
+  // 첫 사진에서 글자를 읽어(OCR), 날짜처럼 생긴 숫자를 찾아 발행일 칸에 자동으로 채움.
+  // 이미 날짜가 입력돼 있거나, PDF만 선택된 경우엔 시도하지 않음.
+  var ocrWorkerPromise = null;
+  function getOcrWorker() {
+    if (!ocrWorkerPromise) ocrWorkerPromise = Tesseract.createWorker("eng");
+    return ocrWorkerPromise;
+  }
+
+  function maybeAutoFillDate() {
+    var statusEl = document.getElementById("dateAutoStatus");
+    if (els.date.value) return; // 이미 직접 입력했으면 건드리지 않음
+    var firstImage = selectedFiles.find(function (f) { return f.type.indexOf("image/") === 0; });
+    if (!firstImage || typeof Tesseract === "undefined") return;
+
+    statusEl.textContent = "사진에서 날짜 찾는 중...";
+    getOcrWorker()
+      .then(function (worker) { return worker.recognize(firstImage); })
+      .then(function (result) {
+        var text = result.data.text || "";
+        var m = text.match(/(20\d{2})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/);
+        if (m && els.date) {
+          var yyyy = m[1], mm = m[2].padStart(2, "0"), dd = m[3].padStart(2, "0");
+          if (!els.date.value) {
+            els.date.value = yyyy + "-" + mm + "-" + dd;
+            statusEl.textContent = "사진에서 날짜를 자동으로 채웠어요. 맞는지 확인해주세요.";
+          }
+        } else {
+          statusEl.textContent = "사진에서 날짜를 못 찾았어요. 직접 입력해주세요.";
+        }
+      })
+      .catch(function () {
+        statusEl.textContent = "자동 인식에 실패했어요. 직접 입력해주세요.";
+      });
   }
 
   function renderThumbs() {
@@ -713,6 +751,7 @@
         els.title.value = "";
         els.no.value = "";
         els.date.value = "";
+        document.getElementById("dateAutoStatus").textContent = "";
         els.summary.value = "";
       })
       .catch(function (err) {
@@ -768,6 +807,7 @@
           els.title.value = item.title;
           els.no.value = item.no;
           els.date.value = item.date || "";
+          document.getElementById("dateAutoStatus").textContent = "";
           els.summary.value = item.summary || "";
           els.submitBtn.textContent = "수정 내용 저장";
           window.scrollTo({ top: els.category.getBoundingClientRect().top + window.scrollY - 20, behavior: "smooth" });
