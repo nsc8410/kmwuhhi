@@ -8,6 +8,8 @@
   var allPubs = [];
   var searchTerm = "";
   var expandedCategory = null;
+  var expandedYear = null;
+  var YEAR_GROUPED_CATEGORY = "과거소식지"; // 이 이름의 박스만 연도별로 묶어서 보여줌
 
   var CATEGORY_ORDER = ["교섭속보", "지부쟁대위", "각종제도"]; // data/categories.json을 못 읽어오면 이 기본값 사용
   var FIXED_CATEGORIES = CATEGORY_ORDER;
@@ -33,6 +35,12 @@
       if (da !== db) return db.localeCompare(da);
       return b.no - a.no;
     });
+  }
+
+  // 날짜가 없는 게시물은 "연도 미상"으로 분류
+  function getYear(p) {
+    if (p.date && /^\d{4}/.test(p.date)) return p.date.slice(0, 4);
+    return "연도 미상";
   }
 
   function buildRow(p) {
@@ -63,6 +71,53 @@
     }
 
     return row;
+  }
+
+  // "과거소식지" 박스 전용: 연도별로 묶어서 보여줌 (연도를 눌러야 그 해 목록이 펼쳐짐)
+  function buildYearGroupedList(itemsInCat, term) {
+    var wrap = document.createElement("div");
+
+    var byYear = {};
+    itemsInCat.forEach(function (p) {
+      var y = getYear(p);
+      (byYear[y] = byYear[y] || []).push(p);
+    });
+
+    var years = Object.keys(byYear).sort(function (a, b) {
+      if (a === "연도 미상") return 1;
+      if (b === "연도 미상") return -1;
+      return b.localeCompare(a);
+    });
+
+    years.forEach(function (year) {
+      var itemsInYear = byYear[year];
+      var isYearOpen = term ? true : (expandedYear === year);
+
+      var group = document.createElement("div");
+      group.className = "year-group" + (isYearOpen ? " year-open" : "");
+
+      var yHead = document.createElement("button");
+      yHead.type = "button";
+      yHead.className = "year-head";
+      yHead.innerHTML = "<span>" + year + "</span><span class='year-count'>" + itemsInYear.length + "건</span>";
+      yHead.addEventListener("click", function () {
+        if (term) return;
+        expandedYear = (expandedYear === year) ? null : year;
+        render();
+      });
+      group.appendChild(yHead);
+
+      if (isYearOpen) {
+        var yList = document.createElement("div");
+        yList.className = "year-list";
+        sortPubs(itemsInYear).forEach(function (p) { yList.appendChild(buildRow(p)); });
+        group.appendChild(yList);
+      }
+
+      wrap.appendChild(group);
+    });
+
+    return wrap;
   }
 
   function render() {
@@ -109,6 +164,7 @@
       head.addEventListener("click", function () {
         if (term) return; // 검색 중에는 전부 펼쳐진 상태 유지
         expandedCategory = (expandedCategory === cat) ? null : cat;
+        expandedYear = null;
         render();
       });
       panel.appendChild(head);
@@ -122,6 +178,8 @@
           empty.className = "panel-empty";
           empty.textContent = term ? "검색 결과가 없습니다." : "아직 등록된 내용이 없습니다.";
           list.appendChild(empty);
+        } else if (cat === YEAR_GROUPED_CATEGORY) {
+          list.appendChild(buildYearGroupedList(itemsInCat, term));
         } else {
           itemsInCat.forEach(function (p) { list.appendChild(buildRow(p)); });
         }
