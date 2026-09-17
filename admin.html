@@ -508,7 +508,7 @@
       .then(function (worker) { return worker.recognize(imageSource); })
       .then(function (result) {
         var text = result.data.text || "";
-        var m = text.match(/(20\d{2})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/);
+        var m = text.match(/(20\d{2})\D{0,4}?(\d{1,2})\D{0,4}?(\d{1,2})/);
         if (m && els.date && !els.date.value) {
           var yyyy = m[1], mm = m[2].padStart(2, "0"), dd = m[3].padStart(2, "0");
           els.date.value = yyyy + "-" + mm + "-" + dd;
