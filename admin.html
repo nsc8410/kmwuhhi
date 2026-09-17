@@ -481,7 +481,7 @@
   // 이미 날짜가 입력돼 있거나, PDF만 선택된 경우엔 시도하지 않음.
   var ocrWorkerPromise = null;
   function getOcrWorker() {
-    if (!ocrWorkerPromise) ocrWorkerPromise = Tesseract.createWorker("eng");
+    if (!ocrWorkerPromise) ocrWorkerPromise = Tesseract.createWorker("kor");
     return ocrWorkerPromise;
   }
 
@@ -541,10 +541,10 @@
     }
 
     if (firstImage) {
-      statusEl.textContent = "사진에서 날짜 찾는 중...";
+      statusEl.textContent = "사진에서 날짜 찾는 중... (처음엔 좀 걸려요)";
       runOcrOn(firstImage, statusEl);
     } else if (firstPdf) {
-      statusEl.textContent = "PDF 첫 페이지에서 날짜 찾는 중...";
+      statusEl.textContent = "PDF 첫 페이지에서 날짜 찾는 중... (처음엔 좀 걸려요)";
       renderPdfFirstPageToCanvas(firstPdf)
         .then(function (canvas) { runOcrOn(canvas, statusEl); })
         .catch(function () {
