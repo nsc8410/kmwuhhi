@@ -488,7 +488,16 @@
     var statusEl = document.getElementById("dateAutoStatus");
     if (els.date.value) return; // 이미 직접 입력했으면 건드리지 않음
     var firstImage = selectedFiles.find(function (f) { return f.type.indexOf("image/") === 0; });
-    if (!firstImage || typeof Tesseract === "undefined") return;
+    if (!firstImage) {
+      if (selectedFiles.some(function (f) { return f.type === "application/pdf"; })) {
+        statusEl.textContent = "PDF는 자동으로 날짜를 못 찾아요. 직접 입력해주세요.";
+      }
+      return;
+    }
+    if (typeof Tesseract === "undefined") {
+      statusEl.textContent = "자동 인식 기능을 불러오지 못했어요. 직접 입력해주세요.";
+      return;
+    }
 
     statusEl.textContent = "사진에서 날짜 찾는 중...";
     getOcrWorker()
