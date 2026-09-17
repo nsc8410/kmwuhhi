@@ -493,12 +493,18 @@
       .then(function (buf) { return pdfjsLib.getDocument({ data: buf }).promise; })
       .then(function (pdf) { return pdf.getPage(1); })
       .then(function (page) {
-        var viewport = page.getViewport({ scale: 2 });
+        var viewport = page.getViewport({ scale: 3 });
         var canvas = document.createElement("canvas");
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         return page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise.then(function () {
-          return canvas;
+          // 발행일은 보통 맨 위 제호 줄에 있으므로, 사진·기사 노이즈를 피해 위쪽 25%만 잘라서 인식률을 높임
+          var cropH = Math.round(canvas.height * 0.25);
+          var cropped = document.createElement("canvas");
+          cropped.width = canvas.width;
+          cropped.height = cropH;
+          cropped.getContext("2d").drawImage(canvas, 0, 0, canvas.width, cropH, 0, 0, canvas.width, cropH);
+          return cropped;
         });
       });
   }
@@ -514,7 +520,7 @@
           els.date.value = yyyy + "-" + mm + "-" + dd;
           statusEl.textContent = "자동으로 날짜를 채웠어요. 맞는지 확인해주세요.";
         } else {
-          statusEl.textContent = "날짜를 못 찾았어요. 직접 입력해주세요.";
+          statusEl.textContent = "날짜를 못 찾았어요. 직접 입력해주세요. (인식된 글자: " + text.replace(/\s+/g, " ").slice(0, 120) + ")";
         }
       })
       .catch(function () {
